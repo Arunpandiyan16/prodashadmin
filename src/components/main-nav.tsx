@@ -1,0 +1,134 @@
+"use client"
+
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
+import {
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
+} from "@/components/ui/sidebar"
+import {
+  LayoutDashboard,
+  ToyBrick,
+  Users,
+  LogIn,
+  UserPlus,
+  Settings,
+  AlertTriangle,
+  ShieldCheck,
+  GanttChartSquare,
+  AppWindow,
+} from "lucide-react"
+import * as React from "react"
+
+const menuItems = [
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    label: "UI Elements",
+    href: "/ui-elements",
+    icon: ToyBrick,
+  },
+  {
+    label: "Pages",
+    icon: AppWindow,
+    subMenu: [
+      { label: "Login", href: "/login", icon: LogIn },
+      { label: "Sign Up", href: "/signup", icon: UserPlus },
+      { label: "Settings", href: "/settings", icon: Settings }, // Example, create page if needed
+      { label: "Error 404", href: "/404-example", icon: AlertTriangle }, // Example
+    ],
+  },
+   {
+    label: "Authentication",
+    href: "/authentication",
+    icon: ShieldCheck,
+  },
+  {
+    label: "Settings",
+    href: "/settings",
+    icon: Settings,
+  },
+]
+
+export function MainNav() {
+  const pathname = usePathname()
+  const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({})
+
+  const toggleMenu = (label: string) => {
+    setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }))
+  }
+
+  React.useEffect(() => {
+    // Open parent menu if a submenu item is active
+    const newOpenMenus: Record<string, boolean> = {};
+    menuItems.forEach(item => {
+      if (item.subMenu) {
+        const isActiveParent = item.subMenu.some(subItem => pathname === subItem.href || pathname.startsWith(subItem.href + '/'));
+        if (isActiveParent) {
+          newOpenMenus[item.label] = true;
+        }
+      }
+    });
+    setOpenMenus(prev => ({...prev, ...newOpenMenus}));
+  }, [pathname]);
+
+
+  return (
+    <SidebarMenu>
+      {menuItems.map((item) => (
+        <SidebarMenuItem key={item.label}>
+          {item.subMenu ? (
+            <>
+              <SidebarMenuButton
+                onClick={() => toggleMenu(item.label)}
+                isActive={item.subMenu.some(subItem => pathname.startsWith(subItem.href))}
+                aria-expanded={openMenus[item.label]}
+                className="justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <item.icon size={18} />
+                  <span>{item.label}</span>
+                </div>
+                <GanttChartSquare 
+                  size={16} 
+                  className={cn("transform transition-transform duration-200", openMenus[item.label] ? "rotate-90" : "")}
+                />
+              </SidebarMenuButton>
+              {openMenus[item.label] && (
+                <SidebarMenuSub>
+                  {item.subMenu.map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.label}>
+                      <Link href={subItem.href} legacyBehavior passHref>
+                        <SidebarMenuSubButton
+                          isActive={pathname === subItem.href || pathname.startsWith(subItem.href + '/')}
+                        >
+                          {subItem.icon && <subItem.icon size={16} />}
+                          <span>{subItem.label}</span>
+                        </SidebarMenuSubButton>
+                      </Link>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              )}
+            </>
+          ) : (
+            <Link href={item.href!} legacyBehavior passHref>
+              <SidebarMenuButton isActive={pathname === item.href || pathname.startsWith(item.href! + '/')}>
+                <item.icon size={18} />
+                <span>{item.label}</span>
+              </SidebarMenuButton>
+            </Link>
+          )}
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  )
+}
