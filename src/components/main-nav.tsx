@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -10,6 +11,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
+  sidebarMenuButtonVariants, // Import variants
 } from "@/components/ui/sidebar"
 import {
   LayoutDashboard,
@@ -106,7 +108,7 @@ export function MainNav() {
                 <SidebarMenuSub>
                   {item.subMenu.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.label}>
-                      <Link href={subItem.href} legacyBehavior passHref>
+                      <Link href={subItem.href}>
                         <SidebarMenuSubButton
                           isActive={pathname === subItem.href || pathname.startsWith(subItem.href + '/')}
                         >
@@ -120,11 +122,15 @@ export function MainNav() {
               )}
             </>
           ) : (
-            <Link href={item.href!} legacyBehavior passHref>
-              <SidebarMenuButton isActive={pathname === item.href || pathname.startsWith(item.href! + '/')}>
-                <item.icon size={18} />
-                <span>{item.label}</span>
-              </SidebarMenuButton>
+            <Link
+              href={item.href!}
+              className={cn(
+                sidebarMenuButtonVariants({ variant: "default", size: "default" })
+              )}
+              data-active={pathname === item.href || pathname.startsWith(item.href! + '/')}
+            >
+              <item.icon size={18} />
+              <span>{item.label}</span>
             </Link>
           )}
         </SidebarMenuItem>
