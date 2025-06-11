@@ -11,7 +11,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
-  sidebarMenuButtonVariants, // Import variants
+  sidebarMenuButtonVariants,
 } from "@/components/ui/sidebar"
 import {
   LayoutDashboard,
@@ -108,9 +108,9 @@ export function MainNav() {
                 <SidebarMenuSub>
                   {item.subMenu.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.label}>
-                      <Link href={subItem.href}>
+                      <Link href={subItem.href!} asChild>
                         <SidebarMenuSubButton
-                          isActive={pathname === subItem.href || pathname.startsWith(subItem.href + '/')}
+                          isActive={pathname === subItem.href || pathname.startsWith(subItem.href! + '/')}
                         >
                           {subItem.icon && <subItem.icon size={16} />}
                           <span>{subItem.label}</span>
