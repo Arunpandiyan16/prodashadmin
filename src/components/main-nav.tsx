@@ -22,6 +22,7 @@ import {
   AppWindow,
   UserCircle,
   ShoppingCart,
+  FileOutput, // Added FileOutput icon
 } from "lucide-react"
 import * as React from "react"
 
@@ -61,6 +62,7 @@ const menuItems = [
     icon: AppWindow,
     subMenu: [
       { label: "Error 404", href: "/404-example", icon: AlertTriangle },
+      { label: "Blank Page", href: "/blank-page-example", icon: FileOutput }, // Added Blank Page
     ],
   },
 ]
