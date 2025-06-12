@@ -8,9 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { UserCircle, Edit3, Camera, Shield, Bell, Settings as SettingsIcon } from "lucide-react";
+import { UserCircle, Edit3, Camera, Shield, Bell, Trash2 } from "lucide-react";
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function ProfilePage() {
   const [user, setUser] = React.useState({
@@ -32,6 +43,13 @@ export default function ProfilePage() {
     setIsEditing(false);
     // Here you would typically send the updated user data to your backend
     console.log("Profile updated:", user);
+  };
+
+  const handleDeleteAccount = () => {
+    // Placeholder for account deletion logic
+    console.log("Account deletion initiated for:", user.email);
+    // Typically, you'd make an API call here.
+    // On success, you might redirect the user or show a success message.
   };
 
   return (
@@ -155,6 +173,40 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Account Deletion Section */}
+      <Card className="shadow-lg border-destructive">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Trash2 className="h-5 w-5 text-destructive" />
+            <CardTitle className="text-xl text-destructive">Account Deletion</CardTitle>
+          </div>
+          <CardDescription>Permanently delete your account and all associated data. This action cannot be undone.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">Delete Account</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your
+                  account and remove your data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAccount}>
+                  Continue
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardContent>
+      </Card>
+
     </div>
   );
 }

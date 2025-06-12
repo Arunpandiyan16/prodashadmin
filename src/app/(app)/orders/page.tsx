@@ -14,9 +14,28 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { ShoppingCart, Search, Filter, MoreHorizontal, ExternalLink, FileDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+  DropdownMenuItem
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { ShoppingCart, Search, Filter, MoreHorizontal, FileDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -26,7 +45,18 @@ import {
 } from "@/components/ui/select"
 
 
-const mockOrders = [
+type OrderStatus = "Pending" | "Shipped" | "Delivered" | "Cancelled";
+type Order = {
+  id: string;
+  customer: string;
+  date: string;
+  status: OrderStatus;
+  total: string;
+  items: number;
+  paymentMethod: string;
+};
+
+const mockOrders: Order[] = [
   { id: "ORD001", customer: "Alice Wonderland", date: "2024-03-15", status: "Shipped", total: "$150.00", items: 3, paymentMethod: "Credit Card" },
   { id: "ORD002", customer: "Bob The Builder", date: "2024-03-14", status: "Delivered", total: "$75.50", items: 1, paymentMethod: "PayPal" },
   { id: "ORD003", customer: "Charlie Chaplin", date: "2024-03-14", status: "Pending", total: "$220.00", items: 5, paymentMethod: "Bank Transfer" },
@@ -35,12 +65,11 @@ const mockOrders = [
   { id: "ORD006", customer: "Fiona Gallagher", date: "2024-03-11", status: "Shipped", total: "$88.00", items: 2, paymentMethod: "Credit Card" },
 ];
 
-type OrderStatus = "Pending" | "Shipped" | "Delivered" | "Cancelled";
 
 const statusVariant: Record<OrderStatus, "default" | "secondary" | "destructive" | "outline"> = {
   Pending: "secondary",
   Shipped: "default",
-  Delivered: "default", // Using default for delivered, could be a success variant if added
+  Delivered: "default", 
   Cancelled: "destructive",
 };
 
@@ -58,6 +87,14 @@ export default function OrdersPage() {
     paymentMethod: false,
   });
 
+  const [isViewDetailsOpen, setIsViewDetailsOpen] = React.useState(false);
+  const [currentOrderForView, setCurrentOrderForView] = React.useState<Order | null>(null);
+  
+  // State for Add New Order Dialog form
+  const [newOrderCustomer, setNewOrderCustomer] = React.useState("");
+  const [newOrderItems, setNewOrderItems] = React.useState("");
+  const [newOrderTotal, setNewOrderTotal] = React.useState("");
+
 
   const filteredOrders = mockOrders.filter(order => {
     const matchesSearch = order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,6 +102,22 @@ export default function OrdersPage() {
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleViewDetails = (order: Order) => {
+    setCurrentOrderForView(order);
+    setIsViewDetailsOpen(true);
+  };
+
+  const handleAddNewOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Placeholder for adding order logic
+    console.log("New Order:", { customer: newOrderCustomer, items: newOrderItems, total: newOrderTotal });
+    // Reset form and close dialog
+    setNewOrderCustomer("");
+    setNewOrderItems("");
+    setNewOrderTotal("");
+    // find a way to close dialog: DialogClose can be used, or manage open state
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,7 +131,66 @@ export default function OrdersPage() {
             <FileDown className="mr-2 h-4 w-4" />
             Export Orders
           </Button>
-          <Button>Add New Order</Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>Add New Order</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New Order</DialogTitle>
+                <DialogDescription>
+                  Fill in the details for the new order. Click save when you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddNewOrder}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="customerName" className="text-right">
+                      Customer
+                    </Label>
+                    <Input 
+                      id="customerName" 
+                      value={newOrderCustomer} 
+                      onChange={(e) => setNewOrderCustomer(e.target.value)} 
+                      className="col-span-3" 
+                      placeholder="Customer name" 
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="itemsCount" className="text-right">
+                      Items
+                    </Label>
+                    <Input 
+                      id="itemsCount" 
+                      type="number" 
+                      value={newOrderItems} 
+                      onChange={(e) => setNewOrderItems(e.target.value)} 
+                      className="col-span-3" 
+                      placeholder="Number of items"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="totalAmount" className="text-right">
+                      Total
+                    </Label>
+                    <Input 
+                      id="totalAmount" 
+                      value={newOrderTotal} 
+                      onChange={(e) => setNewOrderTotal(e.target.value)} 
+                      className="col-span-3" 
+                      placeholder="e.g., $100.00"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button type="submit">Save Order</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -181,7 +293,9 @@ export default function OrdersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleViewDetails(order)}>
+                            View Details
+                          </DropdownMenuItem>
                           <DropdownMenuItem>Mark as Shipped</DropdownMenuItem>
                           <DropdownMenuItem>Print Invoice</DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -202,6 +316,53 @@ export default function OrdersPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* View Order Details Dialog */}
+      <Dialog open={isViewDetailsOpen} onOpenChange={setIsViewDetailsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Order Details: {currentOrderForView?.id}</DialogTitle>
+            <DialogDescription>
+              Detailed information for the selected order.
+            </DialogDescription>
+          </DialogHeader>
+          {currentOrderForView && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-[1fr_2fr] items-center gap-2">
+                <Label className="font-semibold">Order ID:</Label>
+                <span>{currentOrderForView.id}</span>
+              </div>
+              <div className="grid grid-cols-[1fr_2fr] items-center gap-2">
+                <Label className="font-semibold">Customer:</Label>
+                <span>{currentOrderForView.customer}</span>
+              </div>
+              <div className="grid grid-cols-[1fr_2fr] items-center gap-2">
+                <Label className="font-semibold">Date:</Label>
+                <span>{currentOrderForView.date}</span>
+              </div>
+              <div className="grid grid-cols-[1fr_2fr] items-center gap-2">
+                <Label className="font-semibold">Status:</Label>
+                <Badge variant={statusVariant[currentOrderForView.status]}>{currentOrderForView.status}</Badge>
+              </div>
+              <div className="grid grid-cols-[1fr_2fr] items-center gap-2">
+                <Label className="font-semibold">Total:</Label>
+                <span>{currentOrderForView.total}</span>
+              </div>
+              <div className="grid grid-cols-[1fr_2fr] items-center gap-2">
+                <Label className="font-semibold">Items:</Label>
+                <span>{currentOrderForView.items}</span>
+              </div>
+              <div className="grid grid-cols-[1fr_2fr] items-center gap-2">
+                <Label className="font-semibold">Payment Method:</Label>
+                <span>{currentOrderForView.paymentMethod}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsViewDetailsOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
