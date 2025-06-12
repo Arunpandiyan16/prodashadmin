@@ -4,8 +4,8 @@ import {ThemeProvider} from '@/components/theme-provider';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'React Admin Pro',
-  description: 'Professional React Admin Template',
+  title: 'ProDash React',
+  description: 'ProDash React Admin Template by Arun',
 };
 
 export default function RootLayout({

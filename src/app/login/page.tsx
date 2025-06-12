@@ -24,7 +24,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <div className="inline-flex items-center justify-center gap-2 mb-4">
             <Building className="h-8 w-8 text-primary" />
-            <CardTitle className="text-3xl font-bold text-primary">ProDash</CardTitle>
+            <CardTitle className="text-3xl font-bold text-primary">ProDash React</CardTitle>
           </div>
           <CardDescription>
             Enter your email below to login to your account
