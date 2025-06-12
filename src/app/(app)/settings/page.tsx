@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Cog, Globe, Palette, RefreshCw } from "lucide-react";
+import { Cog, Globe, Palette, RefreshCw, DollarSign } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from '@/components/ui/separator';
 
@@ -90,12 +90,10 @@ function hslStringToHex(hslString: string): string {
 
 // Derives a contrasting foreground color (light/dark)
 function deriveForegroundColor(backgroundHsl: { h: number; s: number; l: number }): { h: number; s: number; l: number } {
-  // Using a common threshold for lightness to determine contrast.
-  // L* values are 0-100.
-  if (backgroundHsl.l > 55) { // If background is light
-    return { h: backgroundHsl.h, s: Math.min(100, backgroundHsl.s + 5), l: Math.max(0, backgroundHsl.l - 40 > 15 ? backgroundHsl.l - 40: 10) }; // Darker text
-  } else { // If background is dark
-    return { h: 0, s: 0, l: 95 }; // Lighter text (often white or very light gray)
+  if (backgroundHsl.l > 55) { 
+    return { h: backgroundHsl.h, s: Math.min(100, backgroundHsl.s + 5), l: Math.max(0, backgroundHsl.l - 40 > 15 ? backgroundHsl.l - 40: 10) }; 
+  } else { 
+    return { h: 0, s: 0, l: 95 }; 
   }
 }
 
@@ -104,6 +102,7 @@ export default function SettingsPage() {
   const [username, setUsername] = React.useState("Admin User");
   const [email, setEmail] = React.useState("admin@example.com");
   const [language, setLanguage] = React.useState("en");
+  const [currency, setCurrency] = React.useState("USD");
   const [refreshInterval, setRefreshInterval] = React.useState("15min");
 
   const [currentPrimaryHsl, setCurrentPrimaryHsl] = React.useState<string | null>(null);
@@ -127,13 +126,28 @@ export default function SettingsPage() {
     accent: null, accentForeground: null, ring: null, radius: 0.5
   });
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCurrency = localStorage.getItem('userCurrency');
+      if (savedCurrency) {
+        setCurrency(savedCurrency);
+      }
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('userCurrency', currency);
+    }
+  }, [currency]);
+
 
   const handleAccountSave = () => {
     console.log("Account settings saved:", { username, email });
   };
 
   const handleApplicationSave = () => {
-    console.log("Application settings saved:", { language, refreshInterval });
+    console.log("Application settings saved:", { language, currency, refreshInterval });
   };
 
   const applyColorPreset = (primaryHsl: string, accentHsl: string) => {
@@ -160,8 +174,6 @@ export default function SettingsPage() {
   };
   
   const resetAppearance = () => {
-    // Remove all dynamically set properties by setting current values to null or initial CSS values
-    // This will trigger useEffect to remove inline styles or re-apply initial CSS values
     setCurrentPrimaryHsl(initialValues.primary);
     setCurrentAccentHsl(initialValues.accent);
     setCurrentRadius(initialValues.radius); 
@@ -213,7 +225,6 @@ export default function SettingsPage() {
         '--ring', '--radius'
     ];
 
-    // Apply current primary color and derive related colors
     if (currentPrimaryHsl) {
       docStyle.setProperty('--primary', currentPrimaryHsl);
       const primary = parseHslString(currentPrimaryHsl);
@@ -226,7 +237,7 @@ export default function SettingsPage() {
           s: Math.max(0, primary.s - 15), 
           l: primary.l > 50 ? Math.max(10, primary.l - 20) : Math.min(90, primary.l + 20) 
         };
-        if (Math.abs(secondary.l - primary.l) < 10) { // Ensure sufficient lightness difference
+        if (Math.abs(secondary.l - primary.l) < 10) { 
             secondary.l = primary.l > 50 ? primary.l - 25 : primary.l + 25;
             secondary.l = Math.max(0, Math.min(100, secondary.l));
         }
@@ -252,7 +263,6 @@ export default function SettingsPage() {
         docStyle.removeProperty('--ring');
     }
 
-    // Apply current accent color and derive its foreground
     if (currentAccentHsl) {
       docStyle.setProperty('--accent', currentAccentHsl);
       const accent = parseHslString(currentAccentHsl);
@@ -268,7 +278,6 @@ export default function SettingsPage() {
         docStyle.removeProperty('--accent-foreground');
     }
     
-    // Apply current radius
     if (currentRadius !== null) {
       docStyle.setProperty('--radius', `${currentRadius}rem`);
     } else {
@@ -276,8 +285,6 @@ export default function SettingsPage() {
     }
     
     return () => {
-        // On cleanup, restore initial CSS values from stylesheet by removing inline styles
-        // or re-applying explicitly if needed, but removal is often cleaner.
         propertiesToClean.forEach(prop => {
             const initialVal = initialValues[prop.substring(2) as keyof typeof initialValues];
             if (typeof initialVal === 'string' && initialVal) {
@@ -289,7 +296,6 @@ export default function SettingsPage() {
                  docStyle.removeProperty(prop);
             }
         });
-         // Re-apply initial radius explicitly on cleanup
         docStyle.setProperty('--radius', `${initialValues.radius}rem`);
         if(initialValues.primary) docStyle.setProperty('--primary', initialValues.primary);
         if(initialValues.primaryForeground) docStyle.setProperty('--primary-foreground', initialValues.primaryForeground);
@@ -353,6 +359,20 @@ export default function SettingsPage() {
                 <SelectItem value="en">English</SelectItem>
                 <SelectItem value="es" disabled>Spanish (Coming Soon)</SelectItem>
                 <SelectItem value="fr" disabled>French (Coming Soon)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="currency" className="flex items-center gap-1"><DollarSign size={16}/>Currency Preference</Label>
+            <Select value={currency} onValueChange={setCurrency}>
+              <SelectTrigger id="currency">
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="USD">USD ($)</SelectItem>
+                <SelectItem value="EUR">EUR (€)</SelectItem>
+                <SelectItem value="GBP">GBP (£)</SelectItem>
+                <SelectItem value="JPY">JPY (¥)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -474,6 +494,8 @@ export default function SettingsPage() {
     </div>
   );
 }
+    
+
     
 
     

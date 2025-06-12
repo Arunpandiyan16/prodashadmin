@@ -1,10 +1,46 @@
 
+"use client"
+import React from "react";
 import { OverviewChart, SalesByRegionChart, OrderStatusChart } from "@/components/overview-chart"
 import { RecentSales } from "@/components/recent-sales"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { DollarSign, Users, CreditCard, Activity } from "lucide-react"
 
+const getCurrencySymbol = (currencyCode: string | null) => {
+  switch (currencyCode) {
+    case "USD":
+      return "$";
+    case "EUR":
+      return "€";
+    case "GBP":
+      return "£";
+    case "JPY":
+      return "¥";
+    default:
+      return "$";
+  }
+};
+
 export default function DashboardPage() {
+  const [currentSymbol, setCurrentSymbol] = React.useState("$");
+
+  React.useEffect(() => {
+    const updateUserCurrency = () => {
+      if (typeof window !== 'undefined') {
+        const savedCurrency = localStorage.getItem('userCurrency');
+        setCurrentSymbol(getCurrencySymbol(savedCurrency));
+      }
+    };
+
+    updateUserCurrency(); // Initial check
+
+    window.addEventListener('storage', updateUserCurrency); // Listen for changes from other tabs/windows
+
+    return () => {
+      window.removeEventListener('storage', updateUserCurrency);
+    };
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -16,7 +52,7 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
+            <div className="text-2xl font-bold">{currentSymbol}45,231.89</div>
             <p className="text-xs text-muted-foreground">
               +20.1% from last month
             </p>
@@ -79,3 +115,5 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+    

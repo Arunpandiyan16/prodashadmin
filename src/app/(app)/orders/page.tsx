@@ -51,18 +51,18 @@ type Order = {
   customer: string;
   date: string;
   status: OrderStatus;
-  total: string;
+  total: number; // Changed from string to number
   items: number;
   paymentMethod: string;
 };
 
 const mockOrders: Order[] = [
-  { id: "ORD001", customer: "Alice Wonderland", date: "2024-03-15", status: "Shipped", total: "$150.00", items: 3, paymentMethod: "Credit Card" },
-  { id: "ORD002", customer: "Bob The Builder", date: "2024-03-14", status: "Delivered", total: "$75.50", items: 1, paymentMethod: "PayPal" },
-  { id: "ORD003", customer: "Charlie Chaplin", date: "2024-03-14", status: "Pending", total: "$220.00", items: 5, paymentMethod: "Bank Transfer" },
-  { id: "ORD004", customer: "Diana Prince", date: "2024-03-13", status: "Cancelled", total: "$99.99", items: 2, paymentMethod: "Credit Card" },
-  { id: "ORD005", customer: "Edward Scissorhands", date: "2024-03-12", status: "Delivered", total: "$310.75", items: 4, paymentMethod: "PayPal" },
-  { id: "ORD006", customer: "Fiona Gallagher", date: "2024-03-11", status: "Shipped", total: "$88.00", items: 2, paymentMethod: "Credit Card" },
+  { id: "ORD001", customer: "Alice Wonderland", date: "2024-03-15", status: "Shipped", total: 150.00, items: 3, paymentMethod: "Credit Card" },
+  { id: "ORD002", customer: "Bob The Builder", date: "2024-03-14", status: "Delivered", total: 75.50, items: 1, paymentMethod: "PayPal" },
+  { id: "ORD003", customer: "Charlie Chaplin", date: "2024-03-14", status: "Pending", total: 220.00, items: 5, paymentMethod: "Bank Transfer" },
+  { id: "ORD004", customer: "Diana Prince", date: "2024-03-13", status: "Cancelled", total: 99.99, items: 2, paymentMethod: "Credit Card" },
+  { id: "ORD005", customer: "Edward Scissorhands", date: "2024-03-12", status: "Delivered", total: 310.75, items: 4, paymentMethod: "PayPal" },
+  { id: "ORD006", customer: "Fiona Gallagher", date: "2024-03-11", status: "Shipped", total: 88.00, items: 2, paymentMethod: "Credit Card" },
 ];
 
 
@@ -71,6 +71,21 @@ const statusVariant: Record<OrderStatus, "default" | "secondary" | "destructive"
   Shipped: "default",
   Delivered: "default", 
   Cancelled: "destructive",
+};
+
+const getCurrencySymbol = (currencyCode: string | null) => {
+  switch (currencyCode) {
+    case "USD":
+      return "$";
+    case "EUR":
+      return "€";
+    case "GBP":
+      return "£";
+    case "JPY":
+      return "¥";
+    default:
+      return "$";
+  }
 };
 
 
@@ -90,10 +105,25 @@ export default function OrdersPage() {
   const [isViewDetailsOpen, setIsViewDetailsOpen] = React.useState(false);
   const [currentOrderForView, setCurrentOrderForView] = React.useState<Order | null>(null);
   
-  // State for Add New Order Dialog form
   const [newOrderCustomer, setNewOrderCustomer] = React.useState("");
   const [newOrderItems, setNewOrderItems] = React.useState("");
   const [newOrderTotal, setNewOrderTotal] = React.useState("");
+
+  const [currentSymbol, setCurrentSymbol] = React.useState("$");
+
+  React.useEffect(() => {
+    const updateUserCurrency = () => {
+      if (typeof window !== 'undefined') {
+        const savedCurrency = localStorage.getItem('userCurrency');
+        setCurrentSymbol(getCurrencySymbol(savedCurrency));
+      }
+    };
+    updateUserCurrency();
+    window.addEventListener('storage', updateUserCurrency);
+    return () => {
+      window.removeEventListener('storage', updateUserCurrency);
+    };
+  }, []);
 
 
   const filteredOrders = mockOrders.filter(order => {
@@ -110,13 +140,10 @@ export default function OrdersPage() {
 
   const handleAddNewOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder for adding order logic
     console.log("New Order:", { customer: newOrderCustomer, items: newOrderItems, total: newOrderTotal });
-    // Reset form and close dialog
     setNewOrderCustomer("");
     setNewOrderItems("");
     setNewOrderTotal("");
-    // find a way to close dialog: DialogClose can be used, or manage open state
   };
 
   return (
@@ -178,7 +205,7 @@ export default function OrdersPage() {
                       value={newOrderTotal} 
                       onChange={(e) => setNewOrderTotal(e.target.value)} 
                       className="col-span-3" 
-                      placeholder="e.g., $100.00"
+                      placeholder="e.g., 100.00"
                     />
                   </div>
                 </div>
@@ -281,7 +308,7 @@ export default function OrdersPage() {
                         <Badge variant={statusVariant[order.status as OrderStatus]}>{order.status}</Badge>
                       </TableCell>
                     )}
-                    {visibleColumns.total && <TableCell className="text-right">{order.total}</TableCell>}
+                    {visibleColumns.total && <TableCell className="text-right">{currentSymbol}{order.total.toFixed(2)}</TableCell>}
                     {visibleColumns.items && <TableCell className="text-center">{order.items}</TableCell>}
                     {visibleColumns.paymentMethod && <TableCell>{order.paymentMethod}</TableCell>}
                     <TableCell className="text-right">
@@ -317,7 +344,6 @@ export default function OrdersPage() {
         </CardContent>
       </Card>
 
-      {/* View Order Details Dialog */}
       <Dialog open={isViewDetailsOpen} onOpenChange={setIsViewDetailsOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -346,7 +372,7 @@ export default function OrdersPage() {
               </div>
               <div className="grid grid-cols-[1fr_2fr] items-center gap-2">
                 <Label className="font-semibold">Total:</Label>
-                <span>{currentOrderForView.total}</span>
+                <span>{currentSymbol}{currentOrderForView.total.toFixed(2)}</span>
               </div>
               <div className="grid grid-cols-[1fr_2fr] items-center gap-2">
                 <Label className="font-semibold">Items:</Label>
@@ -366,3 +392,5 @@ export default function OrdersPage() {
     </div>
   );
 }
+
+    
