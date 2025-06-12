@@ -16,14 +16,13 @@ import {
 import {
   LayoutDashboard,
   ToyBrick,
-  Users,
-  LogIn,
-  UserPlus,
   Settings,
   AlertTriangle,
   ShieldCheck,
   GanttChartSquare,
   AppWindow,
+  LogIn,
+  UserPlus,
 } from "lucide-react"
 import * as React from "react"
 
@@ -42,21 +41,10 @@ const menuItems = [
     label: "Pages",
     icon: AppWindow,
     subMenu: [
-      { label: "Login", href: "/login", icon: LogIn },
-      { label: "Sign Up", href: "/signup", icon: UserPlus },
-      { label: "Settings", href: "/settings", icon: Settings }, // Example, create page if needed
-      { label: "Error 404", href: "/404-example", icon: AlertTriangle }, // Example
+      { label: "Settings", href: "/settings", icon: Settings },
+      { label: "Authentication", href: "/authentication", icon: ShieldCheck },
+      { label: "Error 404 Example", href: "/404-example", icon: AlertTriangle },
     ],
-  },
-   {
-    label: "Authentication",
-    href: "/authentication",
-    icon: ShieldCheck,
-  },
-  {
-    label: "Settings",
-    href: "/settings",
-    icon: Settings,
   },
 ]
 
