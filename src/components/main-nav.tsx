@@ -10,7 +10,6 @@ import {
   SidebarMenuButton,
   SidebarMenuSub,
   SidebarMenuSubItem,
-  // SidebarMenuSubButton, // No longer used directly here
   sidebarMenuButtonVariants,
 } from "@/components/ui/sidebar"
 import {
@@ -48,12 +47,20 @@ const menuItems = [
     icon: ToyBrick,
   },
   {
-    label: "Pages",
+    label: "Settings",
+    href: "/settings",
+    icon: Settings,
+  },
+  {
+    label: "User Management",
+    href: "/authentication",
+    icon: ShieldCheck,
+  },
+  {
+    label: "Example Pages",
     icon: AppWindow,
     subMenu: [
-      { label: "Settings", href: "/settings", icon: Settings },
-      { label: "Authentication", href: "/authentication", icon: ShieldCheck },
-      { label: "Error 404 Example", href: "/404-example", icon: AlertTriangle },
+      { label: "Error 404", href: "/404-example", icon: AlertTriangle },
     ],
   },
 ]
