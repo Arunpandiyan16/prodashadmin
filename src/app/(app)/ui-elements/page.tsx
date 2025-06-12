@@ -50,6 +50,63 @@ const fontOptions = [
     { value: "Arial, sans-serif", label: "Arial" },
 ];
 
+// Helper function to convert HEX to HSL string "H S% L%"
+function hexToHslString(hex: string): string {
+  let r = 0, g = 0, b = 0;
+  if (hex.length === 4) { // #RGB
+    r = parseInt(hex[1] + hex[1], 16);
+    g = parseInt(hex[2] + hex[2], 16);
+    b = parseInt(hex[3] + hex[3], 16);
+  } else if (hex.length === 7) { // #RRGGBB
+    r = parseInt(hex.substring(1, 3), 16);
+    g = parseInt(hex.substring(3, 5), 16);
+    b = parseInt(hex.substring(5, 7), 16);
+  } else {
+    return "0 0% 0%"; // Default to black if invalid hex
+  }
+
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  h = Math.round(h * 360);
+  s = Math.round(s * 100);
+  l = Math.round(l * 100);
+  return `${h} ${s}% ${l}%`;
+}
+
+// Helper function to convert HSL string "H S% L%" to HEX
+function hslStringToHex(hslString: string): string {
+  if (!hslString || typeof hslString !== 'string' || hslString.split(" ").length < 3) {
+    return "#000000"; // Default to black if invalid HSL string
+  }
+  const [hStr, sStr, lStr] = hslString.split(" ");
+  let h = parseFloat(hStr);
+  let s = parseFloat(sStr.replace('%', '')) / 100;
+  let l = parseFloat(lStr.replace('%', '')) / 100;
+
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) =>
+    l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+
+  const toHex = (x: number) => {
+    const hexVal = Math.round(x * 255).toString(16);
+    return hexVal.length === 1 ? '0' + hexVal : hexVal;
+  };
+  return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
+}
+
 
 export default function UiElementsPage() {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
@@ -59,19 +116,50 @@ export default function UiElementsPage() {
   const [buttonSize, setButtonSize] = React.useState<ButtonSize>("default");
   const [progressValue, setProgressValue] = React.useState(66);
 
-  const [pgPrimary, setPgPrimary] = React.useState<string | null>(null);
-  const [pgAccent, setPgAccent] = React.useState<string | null>(null);
+  // State for playground overrides
+  const [pgPrimaryHsl, setPgPrimaryHsl] = React.useState<string | null>(null);
+  const [pgAccentHsl, setPgAccentHsl] = React.useState<string | null>(null);
+  const [pgPickerPrimaryHex, setPgPickerPrimaryHex] = React.useState("#6750A4"); // Default ShadCN purple
+  const [pgPickerAccentHex, setPgPickerAccentHex] = React.useState("#343D79"); // Default ShadCN indigo
   const [pgRadius, setPgRadius] = React.useState<number | null>(null);
   const [pgFontFamily, setPgFontFamily] = React.useState<string | null>(null);
-  const [initialRadius, setInitialRadius] = React.useState<number>(0.5);
+
+  // Store initial CSS values for reset
+  const [initialPrimaryHslFromCSS, setInitialPrimaryHslFromCSS] = React.useState<string | null>(null);
+  const [initialAccentHslFromCSS, setInitialAccentHslFromCSS] = React.useState<string | null>(null);
+  const [initialRadiusFromCSS, setInitialRadiusFromCSS] = React.useState<number>(0.5);
 
 
   const allButtonVariants: ButtonVariant[] = ["default", "destructive", "outline", "secondary", "ghost", "link"];
   const allButtonSizes: ButtonSize[] = ["default", "sm", "lg", "icon"];
 
-  const applyPlaygroundColors = (primary: string | null, accent: string | null) => {
-    setPgPrimary(primary);
-    setPgAccent(accent);
+  const applyPlaygroundColors = (primaryHsl: string | null, accentHsl: string | null) => {
+    setPgPrimaryHsl(primaryHsl);
+    setPgAccentHsl(accentHsl);
+
+    if (primaryHsl) {
+      setPgPickerPrimaryHex(hslStringToHex(primaryHsl));
+    } else if (initialPrimaryHslFromCSS) {
+      setPgPickerPrimaryHex(hslStringToHex(initialPrimaryHslFromCSS));
+    }
+
+    if (accentHsl) {
+      setPgPickerAccentHex(hslStringToHex(accentHsl));
+    } else if (initialAccentHslFromCSS) {
+      setPgPickerAccentHex(hslStringToHex(initialAccentHslFromCSS));
+    }
+  };
+  
+  const handlePrimaryColorPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHex = e.target.value;
+    setPgPickerPrimaryHex(newHex);
+    setPgPrimaryHsl(hexToHslString(newHex));
+  };
+
+  const handleAccentColorPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHex = e.target.value;
+    setPgPickerAccentHex(newHex);
+    setPgAccentHsl(hexToHslString(newHex));
   };
 
   const handlePlaygroundFontChange = (selectedValue: string) => {
@@ -83,18 +171,34 @@ export default function UiElementsPage() {
   };
 
   const resetPlaygroundOverrides = () => {
-    setPgPrimary(null);
-    setPgAccent(null);
-    setPgRadius(initialRadius); 
+    setPgPrimaryHsl(null);
+    setPgAccentHsl(null);
+    setPgRadius(initialRadiusFromCSS); 
     setPgFontFamily(null);
+    
+    if (initialPrimaryHslFromCSS) setPgPickerPrimaryHex(hslStringToHex(initialPrimaryHslFromCSS));
+    if (initialAccentHslFromCSS) setPgPickerAccentHex(hslStringToHex(initialAccentHslFromCSS));
   };
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const computedStyle = getComputedStyle(document.documentElement);
-      const radiusFromCSS = parseFloat(computedStyle.getPropertyValue('--radius'));
-      const validRadius = isNaN(radiusFromCSS) ? 0.5 : radiusFromCSS;
-      setInitialRadius(validRadius);
+      
+      const primaryHsl = computedStyle.getPropertyValue('--primary').trim();
+      const accentHsl = computedStyle.getPropertyValue('--accent').trim();
+      const radius = parseFloat(computedStyle.getPropertyValue('--radius'));
+      const validRadius = isNaN(radius) ? 0.5 : radius;
+
+      setInitialPrimaryHslFromCSS(primaryHsl);
+      setInitialAccentHslFromCSS(accentHsl);
+      setInitialRadiusFromCSS(validRadius);
+
+      if (pgPrimaryHsl === null && primaryHsl) {
+        setPgPickerPrimaryHex(hslStringToHex(primaryHsl));
+      }
+      if (pgAccentHsl === null && accentHsl) {
+        setPgPickerAccentHex(hslStringToHex(accentHsl));
+      }
       if (pgRadius === null) { 
         setPgRadius(validRadius);
       }
@@ -105,29 +209,27 @@ export default function UiElementsPage() {
     const docStyle = document.documentElement.style;
     const bodyStyle = document.body.style;
 
-    if (pgPrimary) docStyle.setProperty('--primary', pgPrimary); else docStyle.removeProperty('--primary');
-    if (pgAccent) docStyle.setProperty('--accent', pgAccent); else docStyle.removeProperty('--accent');
+    const originalPrimary = docStyle.getPropertyValue('--primary').trim();
+    const originalAccent = docStyle.getPropertyValue('--accent').trim();
+    const originalRadius = docStyle.getPropertyValue('--radius').trim();
+    const originalFontFamily = bodyStyle.fontFamily;
+
+    if (pgPrimaryHsl) docStyle.setProperty('--primary', pgPrimaryHsl); else docStyle.removeProperty('--primary');
+    if (pgAccentHsl) docStyle.setProperty('--accent', pgAccentHsl); else docStyle.removeProperty('--accent');
     
     if (pgRadius !== null) docStyle.setProperty('--radius', `${pgRadius}rem`); 
-    else if (initialRadius !== null) docStyle.setProperty('--radius', `${initialRadius}rem`); 
     else docStyle.removeProperty('--radius');
-
 
     if (pgFontFamily) bodyStyle.fontFamily = pgFontFamily; else bodyStyle.fontFamily = '';
 
 
     return () => {
-      docStyle.removeProperty('--primary');
-      docStyle.removeProperty('--accent');
-      
-      if (initialRadius !== null) { 
-          docStyle.setProperty('--radius', `${initialRadius}rem`);
-      } else {
-          docStyle.removeProperty('--radius');
-      }
-      bodyStyle.fontFamily = '';
+      docStyle.setProperty('--primary', originalPrimary);
+      docStyle.setProperty('--accent', originalAccent);
+      docStyle.setProperty('--radius', originalRadius);
+      bodyStyle.fontFamily = originalFontFamily;
     };
-  }, [pgPrimary, pgAccent, pgRadius, pgFontFamily, initialRadius]);
+  }, [pgPrimaryHsl, pgAccentHsl, pgRadius, pgFontFamily]);
 
 
   return (
@@ -156,7 +258,7 @@ export default function UiElementsPage() {
                 <CardTitle>Theme Playground</CardTitle>
               </div>
               <CardDescription>
-                Experiment with colors, border radius, and font family in real-time. These changes are temporary for this session and do not modify the global <code>globals.css</code> file. Refreshing the page or toggling the main theme (light/dark) will reset these temporary changes unless reapplied.
+                Experiment with colors, color pickers, border radius, and font family in real-time. These changes are temporary for this session and do not modify the global <code>globals.css</code> file. Refreshing the page or toggling the main theme (light/dark) will reset these temporary changes unless reapplied.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0 space-y-6">
@@ -199,17 +301,42 @@ export default function UiElementsPage() {
                     </div>
                   </div>
                   <Separator />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="pg-primary-color-picker" className="text-sm font-medium">Primary Color</Label>
+                      <Input 
+                        type="color" 
+                        id="pg-primary-color-picker" 
+                        value={pgPickerPrimaryHex} 
+                        onChange={handlePrimaryColorPickerChange}
+                        className="p-1 h-10 w-full mt-1"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">{pgPickerPrimaryHex} (HSL: {pgPrimaryHsl || initialPrimaryHslFromCSS || "N/A"})</p>
+                    </div>
+                     <div>
+                      <Label htmlFor="pg-accent-color-picker" className="text-sm font-medium">Accent Color</Label>
+                      <Input 
+                        type="color" 
+                        id="pg-accent-color-picker" 
+                        value={pgPickerAccentHex} 
+                        onChange={handleAccentColorPickerChange}
+                        className="p-1 h-10 w-full mt-1"
+                      />
+                       <p className="text-xs text-muted-foreground mt-1">{pgPickerAccentHex} (HSL: {pgAccentHsl || initialAccentHslFromCSS || "N/A"})</p>
+                    </div>
+                  </div>
+                  <Separator />
                   <div>
                     <h4 className="font-medium mb-1">Border Radius</h4>
                      <p className="text-xs text-muted-foreground mb-2">Adjust roundness of UI elements.</p>
                     <div className="space-y-1">
-                        <Label htmlFor="radius-slider" className="text-sm">Radius: {pgRadius !== null ? pgRadius.toFixed(1) : initialRadius.toFixed(1)}rem</Label>
+                        <Label htmlFor="radius-slider" className="text-sm">Radius: {pgRadius !== null ? pgRadius.toFixed(1) : initialRadiusFromCSS.toFixed(1)}rem</Label>
                         <Slider
                             id="radius-slider"
                             min={0}
                             max={1.5}
                             step={0.1}
-                            value={[pgRadius ?? initialRadius]}
+                            value={[pgRadius ?? initialRadiusFromCSS]}
                             onValueChange={(value) => setPgRadius(value[0])}
                         />
                     </div>
@@ -590,4 +717,6 @@ export default function UiElementsPage() {
     </TooltipProvider>
   );
 }
+    
+
     
