@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuSub,
   SidebarMenuSubItem,
-  SidebarMenuSubButton,
+  // SidebarMenuSubButton, // No longer used directly here
   sidebarMenuButtonVariants,
 } from "@/components/ui/sidebar"
 import {
@@ -105,13 +105,16 @@ export function MainNav() {
                 <SidebarMenuSub>
                   {item.subMenu.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.label}>
-                      <Link href={subItem.href!} asChild>
-                        <SidebarMenuSubButton
-                          isActive={pathname === subItem.href || pathname.startsWith(subItem.href! + '/')}
-                        >
-                          {subItem.icon && <subItem.icon size={16} />}
-                          <span>{subItem.label}</span>
-                        </SidebarMenuSubButton>
+                      <Link
+                        href={subItem.href!}
+                        className={cn(
+                          "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sm text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
+                          (pathname === subItem.href || pathname.startsWith(subItem.href! + '/')) && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        )}
+                        data-active={pathname === subItem.href || pathname.startsWith(subItem.href! + '/')}
+                      >
+                        {subItem.icon && <subItem.icon size={16} />}
+                        <span>{subItem.label}</span>
                       </Link>
                     </SidebarMenuSubItem>
                   ))}
