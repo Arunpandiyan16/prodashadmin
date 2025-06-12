@@ -21,8 +21,8 @@ import {
   ShieldCheck,
   GanttChartSquare,
   AppWindow,
-  LogIn,
-  UserPlus,
+  UserCircle,
+  ShoppingCart,
 } from "lucide-react"
 import * as React from "react"
 
@@ -31,6 +31,16 @@ const menuItems = [
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    label: "Profile",
+    href: "/profile",
+    icon: UserCircle,
+  },
+  {
+    label: "Orders",
+    href: "/orders",
+    icon: ShoppingCart,
   },
   {
     label: "UI Elements",
@@ -57,7 +67,6 @@ export function MainNav() {
   }
 
   React.useEffect(() => {
-    // Open parent menu if a submenu item is active
     const newOpenMenus: Record<string, boolean> = {};
     menuItems.forEach(item => {
       if (item.subMenu) {
@@ -79,7 +88,7 @@ export function MainNav() {
             <>
               <SidebarMenuButton
                 onClick={() => toggleMenu(item.label)}
-                isActive={item.subMenu.some(subItem => pathname.startsWith(subItem.href))}
+                isActive={item.subMenu.some(subItem => pathname.startsWith(subItem.href!))}
                 aria-expanded={openMenus[item.label]}
                 className="justify-between"
               >
@@ -113,7 +122,8 @@ export function MainNav() {
             <Link
               href={item.href!}
               className={cn(
-                sidebarMenuButtonVariants({ variant: "default", size: "default" })
+                sidebarMenuButtonVariants({ variant: "default", size: "default" }),
+                (pathname === item.href || pathname.startsWith(item.href! + '/')) && "bg-sidebar-accent text-sidebar-accent-foreground"
               )}
               data-active={pathname === item.href || pathname.startsWith(item.href! + '/')}
             >

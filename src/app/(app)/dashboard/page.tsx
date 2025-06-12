@@ -1,8 +1,8 @@
 
-import { OverviewChart, SalesByRegionChart } from "@/components/overview-chart"
+import { OverviewChart, SalesByRegionChart, OrderStatusChart } from "@/components/overview-chart"
 import { RecentSales } from "@/components/recent-sales"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { DollarSign, Users, CreditCard, Activity, TrendingUp } from "lucide-react"
+import { DollarSign, Users, CreditCard, Activity } from "lucide-react"
 
 export default function DashboardPage() {
   return (
@@ -71,8 +71,9 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-1">
+      <div className="grid gap-6 md:grid-cols-2">
         <SalesByRegionChart />
+        <OrderStatusChart />
       </div>
 
     </div>

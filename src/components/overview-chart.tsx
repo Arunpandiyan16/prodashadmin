@@ -1,11 +1,11 @@
 
 "use client"
 
-import { Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Legend } from "recharts"
+import { Bar, BarChart, Line, LineChart, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Legend, Tooltip as RechartsTooltip, Cell } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, ChartConfig } from "@/components/ui/chart"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-const chartData = [
+const monthlySalesData = [
   { month: "January", desktop: 186, mobile: 80 },
   { month: "February", desktop: 305, mobile: 200 },
   { month: "March", desktop: 237, mobile: 120 },
@@ -20,7 +20,7 @@ const chartData = [
   { month: "December", desktop: 350, mobile: 250 },
 ]
 
-const chartConfig = {
+const salesChartConfig = {
   desktop: {
     label: "Desktop",
     color: "hsl(var(--chart-1))",
@@ -39,10 +39,10 @@ export function OverviewChart() {
         <CardDescription>Monthly sales data for desktop and mobile.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[350px] w-full">
+        <ChartContainer config={salesChartConfig} className="h-[350px] w-full">
           <LineChart
             accessibilityLayer
-            data={chartData}
+            data={monthlySalesData}
             margin={{
               left: 12,
               right: 12,
@@ -87,22 +87,26 @@ export function OverviewChart() {
   )
 }
 
-export function SalesByRegionChart() {
-  const regionData = [
-    { region: "North", sales: 4000 },
-    { region: "South", sales: 3000 },
-    { region: "East", sales: 2000 },
-    { region: "West", sales: 2780 },
-    { region: "Central", sales: 1890 },
-  ];
+const regionSalesData = [
+  { region: "North", sales: 4000, fill: "var(--color-north)" },
+  { region: "South", sales: 3000, fill: "var(--color-south)" },
+  { region: "East", sales: 2000, fill: "var(--color-east)" },
+  { region: "West", sales: 2780, fill: "var(--color-west)" },
+  { region: "Central", sales: 1890, fill: "var(--color-central)" },
+];
 
-  const regionChartConfig = {
-    sales: {
-      label: "Sales",
-      color: "hsl(var(--chart-1))",
-    },
-  } satisfies ChartConfig;
+const regionChartConfig = {
+  sales: {
+    label: "Sales",
+  },
+  north: { label: "North", color: "hsl(var(--chart-1))" },
+  south: { label: "South", color: "hsl(var(--chart-2))" },
+  east: { label: "East", color: "hsl(var(--chart-3))" },
+  west: { label: "West", color: "hsl(var(--chart-4))" },
+  central: { label: "Central", color: "hsl(var(--chart-5))" },
+} satisfies ChartConfig;
   
+export function SalesByRegionChart() {
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -111,19 +115,84 @@ export function SalesByRegionChart() {
       </CardHeader>
       <CardContent>
         <ChartContainer config={regionChartConfig} className="h-[350px] w-full">
-          <BarChart accessibilityLayer data={regionData} layout="vertical" margin={{ right: 20 }}>
+          <BarChart accessibilityLayer data={regionSalesData} layout="vertical" margin={{ right: 20 }}>
             <CartesianGrid horizontal={false} />
             <XAxis type="number" dataKey="sales" tickLine={false} axisLine={false} tickMargin={8} />
-            <YAxis type="category" dataKey="region" tickLine={false} axisLine={false} tickMargin={8} />
+            <YAxis type="category" dataKey="region" tickLine={false} axisLine={false} tickMargin={8} width={80} />
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator="dot" />}
             />
-            <ChartLegend content={<ChartLegendContent />} />
-            <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
+            <ChartLegend content={<ChartLegendContent />} nameKey="region" />
+            <Bar dataKey="sales" layout="vertical" radius={4}>
+              {regionSalesData.map((entry) => (
+                  <Cell key={`cell-${entry.region}`} fill={entry.fill} />
+                ))}
+            </Bar>
           </BarChart>
         </ChartContainer>
       </CardContent>
     </Card>
   )
+}
+
+
+const orderStatusData = [
+  { status: "Delivered", count: 250, fill: "hsl(var(--chart-1))" },
+  { status: "Shipped", count: 120, fill: "hsl(var(--chart-2))" },
+  { status: "Pending", count: 80, fill: "hsl(var(--chart-3))" },
+  { status: "Cancelled", count: 30, fill: "hsl(var(--chart-4))" },
+];
+
+const orderStatusChartConfig = {
+  count: {
+    label: "Count",
+  },
+  delivered: { label: "Delivered", color: "hsl(var(--chart-1))" },
+  shipped: { label: "Shipped", color: "hsl(var(--chart-2))" },
+  pending: { label: "Pending", color: "hsl(var(--chart-3))" },
+  cancelled: { label: "Cancelled", color: "hsl(var(--chart-4))" },
+} satisfies ChartConfig;
+
+export function OrderStatusChart() {
+  return (
+    <Card className="shadow-lg">
+      <CardHeader>
+        <CardTitle>Order Status Distribution</CardTitle>
+        <CardDescription>Breakdown of current order statuses.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer
+          config={orderStatusChartConfig}
+          className="mx-auto aspect-square max-h-[300px]"
+        >
+          <PieChart accessibilityLayer>
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent hideLabel />}
+            />
+            <Pie
+              data={orderStatusData}
+              dataKey="count"
+              nameKey="status"
+              innerRadius={60}
+              strokeWidth={5}
+            >
+              {orderStatusData.map((entry) => (
+                <Cell
+                  key={entry.status}
+                  fill={entry.fill}
+                  className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                />
+              ))}
+            </Pie>
+             <ChartLegend
+              content={<ChartLegendContent nameKey="status" />}
+              className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+            />
+          </PieChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
 }
