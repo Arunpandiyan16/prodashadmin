@@ -49,28 +49,30 @@ export default function SettingsPage() {
   const resetAppearance = () => {
     setCurrentPrimary(null);
     setCurrentAccent(null);
-    setCurrentRadius(null); // This will trigger useEffect to remove inline styles
-    // Force removal of inline styles if any were manually uncleared by useEffect returning before null set
-    // or if initial styles need to be restored cleanly
-    document.documentElement.style.removeProperty('--primary');
-    document.documentElement.style.removeProperty('--accent');
-    document.documentElement.style.removeProperty('--radius');
-    // Re-read initial radius in case it was from CSS and needs to be reapplied by slider state
-     if (typeof window !== 'undefined') {
-      const radiusFromCSS = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--radius'));
-      setCurrentRadius(isNaN(radiusFromCSS) ? initialRadius : radiusFromCSS);
-    }
+    setCurrentRadius(null);
+    // The useEffect hook will handle removing the inline styles from the document.
   };
 
   React.useEffect(() => {
     const docStyle = document.documentElement.style;
-    if (currentPrimary) docStyle.setProperty('--primary', currentPrimary); else docStyle.removeProperty('--primary');
-    if (currentAccent) docStyle.setProperty('--accent', currentAccent); else docStyle.removeProperty('--accent');
-    if (currentRadius !== null) docStyle.setProperty('--radius', `${currentRadius}rem`); else docStyle.removeProperty('--radius');
+    if (currentPrimary) {
+      docStyle.setProperty('--primary', currentPrimary);
+    } else {
+      docStyle.removeProperty('--primary');
+    }
+    if (currentAccent) {
+      docStyle.setProperty('--accent', currentAccent);
+    } else {
+      docStyle.removeProperty('--accent');
+    }
+    if (currentRadius !== null) {
+      docStyle.setProperty('--radius', `${currentRadius}rem`);
+    } else {
+      docStyle.removeProperty('--radius');
+    }
     
+    // Cleanup function to remove styles if the component unmounts or dependencies change triggering removal
     return () => {
-        // More robust cleanup: always attempt to remove these specific properties if they were potentially set.
-        // This avoids issues if the component unmounts while a value is set.
         docStyle.removeProperty('--primary');
         docStyle.removeProperty('--accent');
         docStyle.removeProperty('--radius');
@@ -78,15 +80,20 @@ export default function SettingsPage() {
   }, [currentPrimary, currentAccent, currentRadius]);
 
   React.useEffect(() => {
+    // On component mount, read the initial radius from CSS to set a baseline for the slider
+    // and to initialize currentRadius if it's not already set (e.g. by user interaction or future persistence logic)
     if (typeof window !== 'undefined') {
-      const radiusFromCSS = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--radius'));
-      const validRadius = isNaN(radiusFromCSS) ? 0.5 : radiusFromCSS; // Default to 0.5 if CSS var is not a number
-      setInitialRadius(validRadius);
-      if (currentRadius === null) { // Only set if not already customized by user action
-        setCurrentRadius(validRadius);
+      const computedStyle = getComputedStyle(document.documentElement);
+      const radiusFromCSS = parseFloat(computedStyle.getPropertyValue('--radius'));
+      const validRadius = isNaN(radiusFromCSS) ? 0.5 : radiusFromCSS; // Default to 0.5 if CSS var is invalid or not found
+      
+      setInitialRadius(validRadius); // Store the actual initial radius from CSS
+
+      if (currentRadius === null) { // If currentRadius hasn't been touched by user (or loaded from persistence)
+        setCurrentRadius(validRadius); // Initialize slider and live preview to match current global CSS
       }
     }
-  }, []);
+  }, []); // Empty dependency array ensures this runs once on mount
 
 
   return (
@@ -168,7 +175,7 @@ export default function SettingsPage() {
             <CardTitle>Appearance Settings (Live Preview)</CardTitle>
           </div>
           <CardDescription>
-            Experiment with the application's look and feel. Changes made here are applied live for your current session only and will reset on page refresh or when you navigate away.
+            Experiment with the application's look and feel. Changes made here (primary color, accent color, border radius) are applied live for your current session only and will reset on page refresh or when you navigate away.
             The 'Save Appearance' button below is for demonstration; actual persistence would require further development (e.g., saving to user preferences).
             For permanent, global theme definitions, developers should edit <code>src/app/globals.css</code>.
           </CardDescription>
