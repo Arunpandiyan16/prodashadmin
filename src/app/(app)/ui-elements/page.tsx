@@ -24,7 +24,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush, Settings2, Palette } from "lucide-react";
+import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush, Settings2, Palette, RotateCcw } from "lucide-react";
 import Image from 'next/image';
 import type { VariantProps } from 'class-variance-authority';
 import { buttonVariants } from '@/components/ui/button';
@@ -41,29 +41,39 @@ export default function UiElementsPage() {
   const [buttonSize, setButtonSize] = React.useState<ButtonSize>("default");
   const [progressValue, setProgressValue] = React.useState(66);
 
+  // State for playground overrides
+  const [pgPrimary, setPgPrimary] = React.useState<string | null>(null);
+  const [pgAccent, setPgAccent] = React.useState<string | null>(null);
+  const [pgRadius, setPgRadius] = React.useState<number | null>(null);
+
+
   const allButtonVariants: ButtonVariant[] = ["default", "destructive", "outline", "secondary", "ghost", "link"];
   const allButtonSizes: ButtonSize[] = ["default", "sm", "lg", "icon"];
 
-  const applyThemeColors = (primary: string, accent: string) => {
-    if (typeof window !== "undefined") {
-      document.documentElement.style.setProperty('--primary', primary);
-      document.documentElement.style.setProperty('--accent', accent);
-    }
+  const applyPlaygroundColors = (primary: string, accent: string) => {
+    setPgPrimary(primary);
+    setPgAccent(accent);
   };
 
-  const resetThemeColors = () => {
-    if (typeof window !== "undefined") {
-      document.documentElement.style.removeProperty('--primary');
-      document.documentElement.style.removeProperty('--accent');
-    }
+  const resetPlaygroundOverrides = () => {
+    setPgPrimary(null);
+    setPgAccent(null);
+    setPgRadius(null);
   };
 
   React.useEffect(() => {
-    // Cleanup function to reset colors when component unmounts or for HMR
+    const docStyle = document.documentElement.style;
+    if (pgPrimary) docStyle.setProperty('--primary', pgPrimary); else docStyle.removeProperty('--primary');
+    if (pgAccent) docStyle.setProperty('--accent', pgAccent); else docStyle.removeProperty('--accent');
+    if (pgRadius !== null) docStyle.setProperty('--radius', `${pgRadius}rem`); else docStyle.removeProperty('--radius');
+
+    // Cleanup function to reset all playground overrides when component unmounts or for HMR
     return () => {
-      resetThemeColors();
+      docStyle.removeProperty('--primary');
+      docStyle.removeProperty('--accent');
+      docStyle.removeProperty('--radius');
     };
-  }, []);
+  }, [pgPrimary, pgAccent, pgRadius]);
 
 
   return (
@@ -79,26 +89,27 @@ export default function UiElementsPage() {
             The UI components showcased below are styled using the theme defined in <strong>src/app/globals.css</strong>.
             You can customize the application&apos;s appearance, including colors and border radius, by modifying the HSL variables
             in that file. Use the theme toggle in the header to switch between light, dark, and system modes to see your changes in action.
+            The playground below offers temporary, session-only experimentation.
           </AlertDescription>
         </Alert>
 
-        {/* Live Theme Color Playground */}
+        {/* Live Theme Playground */}
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Live Theme Color Playground (Session Only)</h2>
+          <h2 className="text-2xl font-semibold mb-4">Live Theme Playground (Session Only)</h2>
           <Card className="p-6 shadow-lg">
             <CardHeader className="p-0 pb-4">
               <div className="flex items-center gap-2">
                 <Palette className="h-5 w-5 text-primary" />
-                <CardTitle>Theme Color Playground</CardTitle>
+                <CardTitle>Theme Playground</CardTitle>
               </div>
               <CardDescription>
-                Experiment with primary and accent colors in real-time. These changes are temporary for this session and do not modify the global <code>globals.css</code> file. Refreshing the page or toggling the main theme (light/dark) will reset these temporary changes unless reapplied.
+                Experiment with primary, accent colors, and border radius in real-time. These changes are temporary for this session and do not modify the global <code>globals.css</code> file. Refreshing the page or toggling the main theme (light/dark) will reset these temporary changes unless reapplied.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0 space-y-6">
-              <div className="grid md:grid-cols-2 gap-6 items-center">
-                <div className="space-y-4 p-4 border rounded-lg">
-                  <h4 className="font-medium text-center mb-2">Preview Elements</h4>
+              <div className="grid md:grid-cols-2 gap-6 items-start">
+                <div className="space-y-4 p-4 border rounded-lg bg-card">
+                  <h4 className="font-medium text-center mb-2 text-card-foreground">Preview Elements</h4>
                   <Button variant="default" size="lg">Primary Button</Button>
                   <Button variant="outline" size="lg">Outline Button</Button>
                    <div className="flex gap-2">
@@ -110,11 +121,34 @@ export default function UiElementsPage() {
                     This box uses the accent color for its background.
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <Button onClick={() => applyThemeColors('210 70% 55%', '170 60% 45%')} className="w-full">Apply Oceanic Tones (Blue/Teal)</Button>
-                  <Button onClick={() => applyThemeColors('30 90% 55%', '0 80% 60%')} className="w-full">Apply Sunset Hues (Orange/Red)</Button>
-                  <Button onClick={() => applyThemeColors('140 60% 45%', '40 70% 50%')} className="w-full">Apply Verdant Greens (Green/Gold)</Button>
-                  <Button onClick={resetThemeColors} variant="outline" className="w-full">Reset to Global Theme</Button>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Color Presets</h4>
+                    <div className="grid gap-2">
+                        <Button onClick={() => applyPlaygroundColors('210 70% 55%', '170 60% 45%')} className="w-full">Apply Oceanic Tones (Blue/Teal)</Button>
+                        <Button onClick={() => applyPlaygroundColors('30 90% 55%', '0 80% 60%')} className="w-full">Apply Sunset Hues (Orange/Red)</Button>
+                        <Button onClick={() => applyPlaygroundColors('140 60% 45%', '40 70% 50%')} className="w-full">Apply Verdant Greens (Green/Gold)</Button>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div>
+                    <h4 className="font-medium mb-2">Border Radius</h4>
+                    <div className="space-y-2">
+                        <Label htmlFor="radius-slider">Radius: {pgRadius !== null ? pgRadius.toFixed(1) : (typeof window !== 'undefined' ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--radius')).toFixed(1) : '0.5')}rem</Label>
+                        <Slider
+                            id="radius-slider"
+                            min={0}
+                            max={1.5}
+                            step={0.1}
+                            value={[pgRadius ?? 0.5]}
+                            onValueChange={(value) => setPgRadius(value[0])}
+                        />
+                    </div>
+                  </div>
+                  <Separator />
+                  <Button onClick={resetPlaygroundOverrides} variant="outline" className="w-full">
+                    <RotateCcw className="mr-2 h-4 w-4" /> Reset Playground Overrides
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -474,3 +508,5 @@ export default function UiElementsPage() {
     </TooltipProvider>
   );
 }
+
+    
