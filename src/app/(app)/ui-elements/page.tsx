@@ -24,7 +24,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush, Settings2, Palette, RotateCcw } from "lucide-react";
+import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush, Settings2, Palette, RotateCcw, Font } from "lucide-react";
 import Image from 'next/image';
 import type { VariantProps } from 'class-variance-authority';
 import { buttonVariants } from '@/components/ui/button';
@@ -32,6 +32,23 @@ import { buttonVariants } from '@/components/ui/button';
 
 type ButtonVariant = VariantProps<typeof buttonVariants>['variant'];
 type ButtonSize = VariantProps<typeof buttonVariants>['size'];
+
+const colorPresets = [
+    { name: "Oceanic (Blue/Teal)", primary: "210 70% 55%", accent: "170 60% 45%" },
+    { name: "Sunset (Orange/Red)", primary: "30 90% 55%", accent: "0 80% 60%" },
+    { name: "Verdant (Green/Gold)", primary: "140 60% 45%", accent: "40 70% 50%" },
+    { name: "Indigo & Pink", primary: "240 50% 50%", accent: "330 80% 70%" },
+    { name: "Charcoal & Lime", primary: "210 10% 30%", accent: "90 70% 55%" },
+];
+
+const fontOptions = [
+    { value: "", label: "Default (Inter)" },
+    { value: "Roboto, sans-serif", label: "Roboto" },
+    { value: "Georgia, serif", label: "Georgia (Serif)" },
+    { value: "Verdana, sans-serif", label: "Verdana" },
+    { value: "Arial, sans-serif", label: "Arial" },
+];
+
 
 export default function UiElementsPage() {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
@@ -45,6 +62,8 @@ export default function UiElementsPage() {
   const [pgPrimary, setPgPrimary] = React.useState<string | null>(null);
   const [pgAccent, setPgAccent] = React.useState<string | null>(null);
   const [pgRadius, setPgRadius] = React.useState<number | null>(null);
+  const [pgFontFamily, setPgFontFamily] = React.useState<string | null>(null);
+  const [initialRadius, setInitialRadius] = React.useState<number>(0.5);
 
 
   const allButtonVariants: ButtonVariant[] = ["default", "destructive", "outline", "secondary", "ghost", "link"];
@@ -55,25 +74,48 @@ export default function UiElementsPage() {
     setPgAccent(accent);
   };
 
+  const handlePlaygroundFontChange = (font: string) => {
+    setPgFontFamily(font === "" ? null : font);
+  };
+
   const resetPlaygroundOverrides = () => {
     setPgPrimary(null);
     setPgAccent(null);
     setPgRadius(null);
+    setPgFontFamily(null);
   };
 
   React.useEffect(() => {
+    // On component mount, read the initial radius from CSS
+    if (typeof window !== 'undefined') {
+      const computedStyle = getComputedStyle(document.documentElement);
+      const radiusFromCSS = parseFloat(computedStyle.getPropertyValue('--radius'));
+      const validRadius = isNaN(radiusFromCSS) ? 0.5 : radiusFromCSS;
+      setInitialRadius(validRadius);
+      if (pgRadius === null) {
+        setPgRadius(validRadius);
+      }
+    }
+  }, []); // Empty dependency array for mount only
+
+  React.useEffect(() => {
     const docStyle = document.documentElement.style;
+    const bodyStyle = document.body.style;
+
     if (pgPrimary) docStyle.setProperty('--primary', pgPrimary); else docStyle.removeProperty('--primary');
     if (pgAccent) docStyle.setProperty('--accent', pgAccent); else docStyle.removeProperty('--accent');
     if (pgRadius !== null) docStyle.setProperty('--radius', `${pgRadius}rem`); else docStyle.removeProperty('--radius');
+    if (pgFontFamily) bodyStyle.fontFamily = pgFontFamily; else bodyStyle.fontFamily = '';
+
 
     // Cleanup function to reset all playground overrides when component unmounts or for HMR
     return () => {
       docStyle.removeProperty('--primary');
       docStyle.removeProperty('--accent');
       docStyle.removeProperty('--radius');
+      bodyStyle.fontFamily = '';
     };
-  }, [pgPrimary, pgAccent, pgRadius]);
+  }, [pgPrimary, pgAccent, pgRadius, pgFontFamily]);
 
 
   return (
@@ -103,7 +145,7 @@ export default function UiElementsPage() {
                 <CardTitle>Theme Playground</CardTitle>
               </div>
               <CardDescription>
-                Experiment with primary, accent colors, and border radius in real-time. These changes are temporary for this session and do not modify the global <code>globals.css</code> file. Refreshing the page or toggling the main theme (light/dark) will reset these temporary changes unless reapplied.
+                Experiment with colors, border radius, and font family in real-time. These changes are temporary for this session and do not modify the global <code>globals.css</code> file. Refreshing the page or toggling the main theme (light/dark) will reset these temporary changes unless reapplied.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0 space-y-6">
@@ -120,31 +162,62 @@ export default function UiElementsPage() {
                   <div className="p-3 bg-accent text-accent-foreground rounded-md">
                     This box uses the accent color for its background.
                   </div>
+                  <Input placeholder="Input with current radius" />
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium mb-2">Color Presets</h4>
-                    <div className="grid gap-2">
-                        <Button onClick={() => applyPlaygroundColors('210 70% 55%', '170 60% 45%')} className="w-full">Apply Oceanic Tones (Blue/Teal)</Button>
-                        <Button onClick={() => applyPlaygroundColors('30 90% 55%', '0 80% 60%')} className="w-full">Apply Sunset Hues (Orange/Red)</Button>
-                        <Button onClick={() => applyPlaygroundColors('140 60% 45%', '40 70% 50%')} className="w-full">Apply Verdant Greens (Green/Gold)</Button>
+                    <h4 className="font-medium mb-1">Color Presets</h4>
+                    <p className="text-xs text-muted-foreground mb-2">Change primary & accent colors.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {colorPresets.map(preset => (
+                             <Button 
+                                key={preset.name} 
+                                variant="outline"
+                                onClick={() => applyPlaygroundColors(preset.primary, preset.accent)}
+                                className="w-full justify-start text-xs"
+                                size="sm"
+                            >
+                                <span style={{ backgroundColor: `hsl(${preset.primary})` }} className="w-3 h-3 rounded-full mr-2 border"/>
+                                {preset.name}
+                            </Button>
+                        ))}
                     </div>
                   </div>
                   <Separator />
                   <div>
-                    <h4 className="font-medium mb-2">Border Radius</h4>
-                    <div className="space-y-2">
-                        <Label htmlFor="radius-slider">Radius: {pgRadius !== null ? pgRadius.toFixed(1) : (typeof window !== 'undefined' ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--radius')).toFixed(1) : '0.5')}rem</Label>
+                    <h4 className="font-medium mb-1">Border Radius</h4>
+                     <p className="text-xs text-muted-foreground mb-2">Adjust roundness of UI elements.</p>
+                    <div className="space-y-1">
+                        <Label htmlFor="radius-slider" className="text-sm">Radius: {pgRadius !== null ? pgRadius.toFixed(1) : initialRadius.toFixed(1)}rem</Label>
                         <Slider
                             id="radius-slider"
                             min={0}
                             max={1.5}
                             step={0.1}
-                            value={[pgRadius ?? 0.5]}
+                            value={[pgRadius ?? initialRadius]}
                             onValueChange={(value) => setPgRadius(value[0])}
                         />
                     </div>
                   </div>
+                  <Separator />
+                  <div>
+                    <h4 className="font-medium mb-1">Font Family</h4>
+                    <p className="text-xs text-muted-foreground mb-2">Switch the application font (body).</p>
+                     <Select value={pgFontFamily || ""} onValueChange={handlePlaygroundFontChange}>
+                        <SelectTrigger id="font-family-select">
+                            <Font className="mr-2 h-4 w-4" />
+                            <SelectValue placeholder="Select font family" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {fontOptions.map(font => (
+                                <SelectItem key={font.value} value={font.value} style={{fontFamily: font.value || 'Inter, sans-serif'}}>
+                                    {font.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                  </div>
+
                   <Separator />
                   <Button onClick={resetPlaygroundOverrides} variant="outline" className="w-full">
                     <RotateCcw className="mr-2 h-4 w-4" /> Reset Playground Overrides
