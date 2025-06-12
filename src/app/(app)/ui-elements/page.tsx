@@ -24,13 +24,26 @@ import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush } from "lucide-react";
+import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush, Settings2 } from "lucide-react";
 import Image from 'next/image';
+import type { VariantProps } from 'class-variance-authority';
+import { buttonVariants } from '@/components/ui/button';
 
+
+type ButtonVariant = VariantProps<typeof buttonVariants>['variant'];
+type ButtonSize = VariantProps<typeof buttonVariants>['size'];
 
 export default function UiElementsPage() {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const { toast } = useToast();
+
+  const [buttonVariant, setButtonVariant] = React.useState<ButtonVariant>("default");
+  const [buttonSize, setButtonSize] = React.useState<ButtonSize>("default");
+  const [progressValue, setProgressValue] = React.useState(66);
+
+  const allButtonVariants: ButtonVariant[] = ["default", "destructive", "outline", "secondary", "ghost", "link"];
+  const allButtonSizes: ButtonSize[] = ["default", "sm", "lg", "icon"];
+
 
   return (
     <TooltipProvider>
@@ -40,7 +53,7 @@ export default function UiElementsPage() {
 
         <Alert>
           <Paintbrush className="h-4 w-4" />
-          <AlertTitle>Customize Your UI!</AlertTitle>
+          <AlertTitle>Customize Your Global UI!</AlertTitle>
           <AlertDescription>
             The UI components showcased below are styled using the theme defined in <strong>src/app/globals.css</strong>.
             You can customize the application&apos;s appearance, including colors and border radius, by modifying the HSL variables
@@ -64,6 +77,41 @@ export default function UiElementsPage() {
               <Button size="sm">Small</Button>
               <Button size="lg">Large</Button>
               <Button size="icon"><Users className="h-4 w-4" /></Button>
+            </div>
+            <Separator className="my-6" />
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium flex items-center gap-2"><Settings2 className="h-5 w-5" />Interactive Button Customization</h3>
+              <div className="grid md:grid-cols-3 gap-4 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="button-variant">Variant</Label>
+                  <Select value={buttonVariant || "default"} onValueChange={(value) => setButtonVariant(value as ButtonVariant)}>
+                    <SelectTrigger id="button-variant">
+                      <SelectValue placeholder="Select variant" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allButtonVariants.map(variant => (
+                        <SelectItem key={variant || 'default'} value={variant || 'default'}>{variant ? variant.charAt(0).toUpperCase() + variant.slice(1) : 'Default'}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="button-size">Size</Label>
+                   <Select value={buttonSize || "default"} onValueChange={(value) => setButtonSize(value as ButtonSize)}>
+                    <SelectTrigger id="button-size">
+                      <SelectValue placeholder="Select size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allButtonSizes.map(size => (
+                        <SelectItem key={size || 'default'} value={size || 'default'}>{size ? size.charAt(0).toUpperCase() + size.slice(1) : 'Default'}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button variant={buttonVariant} size={buttonSize} className="w-full md:w-auto">
+                  {buttonSize === 'icon' ? <Users /> : 'Try Me!'}
+                </Button>
+              </div>
             </div>
           </Card>
         </section>
@@ -278,15 +326,22 @@ export default function UiElementsPage() {
          <section>
           <h2 className="text-2xl font-semibold mb-4">Progress, Slider & Calendar</h2>
           <Card className="p-6 grid md:grid-cols-3 gap-6 shadow-lg">
-            <div className="space-y-4">
-                <Label>Progress Bar</Label>
-                <Progress value={66} className="w-full" />
+            <div className="space-y-4 md:col-span-2">
+                <Label htmlFor="progress-bar-interactive">Progress Bar (Value: {progressValue}%)</Label>
+                <Progress id="progress-bar-interactive" value={progressValue} className="w-full" />
+                <div className="pt-2">
+                  <Label htmlFor="progress-slider">Control Progress:</Label>
+                  <Slider
+                    id="progress-slider"
+                    value={[progressValue]}
+                    onValueChange={(value) => setProgressValue(value[0])}
+                    max={100}
+                    step={1}
+                    className="w-full mt-2"
+                   />
+                </div>
             </div>
-             <div className="space-y-4">
-                <Label>Slider</Label>
-                <Slider defaultValue={[50]} max={100} step={1} className="w-full" />
-            </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center items-start">
                <Calendar
                 mode="single"
                 selected={date}
