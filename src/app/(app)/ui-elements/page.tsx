@@ -24,7 +24,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush, Settings2, Palette, RotateCcw, Baseline } from "lucide-react";
+import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush, Settings2, Palette, RotateCcw, Baseline, Wallpaper, Square } from "lucide-react";
 import Image from 'next/image';
 import type { VariantProps } from 'class-variance-authority';
 import { buttonVariants } from '@/components/ui/button';
@@ -143,21 +143,31 @@ export default function UiElementsPage() {
   // State for playground overrides
   const [pgPrimaryHsl, setPgPrimaryHsl] = React.useState<string | null>(null);
   const [pgAccentHsl, setPgAccentHsl] = React.useState<string | null>(null);
+  const [pgBackgroundHsl, setPgBackgroundHsl] = React.useState<string | null>(null);
+  const [pgCardHsl, setPgCardHsl] = React.useState<string | null>(null);
+  
   const [pgPickerPrimaryHex, setPgPickerPrimaryHex] = React.useState("#6750A4"); 
   const [pgPickerAccentHex, setPgPickerAccentHex] = React.useState("#343D79"); 
-  const [pgRadius, setPgRadius] = React.useState<number | null>(null); // Can be null to mean "use CSS default"
-  const [pgFontFamily, setPgFontFamily] = React.useState<string | null>(null); // null means "use CSS default"
+  const [pgPickerBackgroundHex, setPgPickerBackgroundHex] = React.useState("#E6E0EB");
+  const [pgPickerCardHex, setPgPickerCardHex] = React.useState("#FFFFFF");
+
+  const [pgRadius, setPgRadius] = React.useState<number | null>(null); 
+  const [pgFontFamily, setPgFontFamily] = React.useState<string | null>(null); 
 
   
   const [initialThemeValuesFromCSS, setInitialThemeValuesFromCSS] = React.useState<{
     primary: string; primaryForeground: string;
     secondary: string; secondaryForeground: string;
     accent: string; accentForeground: string;
+    background: string; foreground: string;
+    card: string; cardForeground: string;
     ring: string; radius: number; fontFamily: string;
   }>({
     primary: "258 36% 51%", primaryForeground: "0 0% 100%",
     secondary: "262 28% 80%", secondaryForeground: "258 36% 30%",
     accent: "232 39% 34%", accentForeground: "0 0% 100%",
+    background: "262 28% 90%", foreground: "258 10% 20%",
+    card: "0 0% 100%", cardForeground: "258 10% 20%",
     ring: "258 36% 61%", radius: 0.5, fontFamily: "Inter, sans-serif",
   });
 
@@ -166,32 +176,38 @@ export default function UiElementsPage() {
   const allButtonSizes: ButtonSize[] = ["default", "sm", "lg", "icon"];
 
   const applyPlaygroundColors = (primaryHsl: string | null, accentHsl: string | null) => {
-    setPgPrimaryHsl(primaryHsl); // This will trigger useEffect to update derived colors too
-    setPgAccentHsl(accentHsl);   // This will trigger useEffect
+    setPgPrimaryHsl(primaryHsl); 
+    setPgAccentHsl(accentHsl);   
 
-    if (primaryHsl) {
-      setPgPickerPrimaryHex(hslStringToHex(primaryHsl));
-    } else {
-      setPgPickerPrimaryHex(hslStringToHex(initialThemeValuesFromCSS.primary));
-    }
+    if (primaryHsl) setPgPickerPrimaryHex(hslStringToHex(primaryHsl));
+    else setPgPickerPrimaryHex(hslStringToHex(initialThemeValuesFromCSS.primary));
 
-    if (accentHsl) {
-      setPgPickerAccentHex(hslStringToHex(accentHsl));
-    } else {
-       setPgPickerAccentHex(hslStringToHex(initialThemeValuesFromCSS.accent));
-    }
+    if (accentHsl) setPgPickerAccentHex(hslStringToHex(accentHsl));
+    else setPgPickerAccentHex(hslStringToHex(initialThemeValuesFromCSS.accent));
   };
   
   const handlePrimaryColorPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newHex = e.target.value;
     setPgPickerPrimaryHex(newHex);
-    setPgPrimaryHsl(hexToHslString(newHex)); // This will trigger useEffect
+    setPgPrimaryHsl(hexToHslString(newHex)); 
   };
 
   const handleAccentColorPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newHex = e.target.value;
     setPgPickerAccentHex(newHex);
-    setPgAccentHsl(hexToHslString(newHex)); // This will trigger useEffect
+    setPgAccentHsl(hexToHslString(newHex)); 
+  };
+
+  const handleBackgroundColorPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHex = e.target.value;
+    setPgPickerBackgroundHex(newHex);
+    setPgBackgroundHsl(hexToHslString(newHex));
+  };
+
+  const handleCardColorPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHex = e.target.value;
+    setPgPickerCardHex(newHex);
+    setPgCardHsl(hexToHslString(newHex));
   };
 
   const handlePlaygroundFontChange = (selectedValue: string) => {
@@ -209,40 +225,43 @@ export default function UiElementsPage() {
   const resetPlaygroundOverrides = () => {
     setPgPrimaryHsl(null);
     setPgAccentHsl(null);
+    setPgBackgroundHsl(null);
+    setPgCardHsl(null);
     setPgRadius(null); 
     setPgFontFamily(null);
     
     setPgPickerPrimaryHex(hslStringToHex(initialThemeValuesFromCSS.primary));
     setPgPickerAccentHex(hslStringToHex(initialThemeValuesFromCSS.accent));
+    setPgPickerBackgroundHex(hslStringToHex(initialThemeValuesFromCSS.background));
+    setPgPickerCardHex(hslStringToHex(initialThemeValuesFromCSS.card));
   };
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
-      const computedStyle = getComputedStyle(document.documentElement);
-      const bodyComputedStyle = getComputedStyle(document.body);
+      const rootStyle = getComputedStyle(document.documentElement);
+      const bodyStyle = getComputedStyle(document.body);
       
-      const initialPrimary = computedStyle.getPropertyValue('--primary').trim() || "258 36% 51%";
-      const initialPrimaryFg = computedStyle.getPropertyValue('--primary-foreground').trim() || "0 0% 100%";
-      const initialSecondary = computedStyle.getPropertyValue('--secondary').trim() || "262 28% 80%";
-      const initialSecondaryFg = computedStyle.getPropertyValue('--secondary-foreground').trim() || "258 36% 30%";
-      const initialAccent = computedStyle.getPropertyValue('--accent').trim() || "232 39% 34%";
-      const initialAccentFg = computedStyle.getPropertyValue('--accent-foreground').trim() || "0 0% 100%";
-      const initialRing = computedStyle.getPropertyValue('--ring').trim() || "258 36% 61%";
-      const radiusFromCSS = parseFloat(computedStyle.getPropertyValue('--radius'));
-      const validRadius = isNaN(radiusFromCSS) ? 0.5 : radiusFromCSS;
-      const initialFont = bodyComputedStyle.fontFamily || "Inter, sans-serif";
+      const initialVals = {
+        primary: rootStyle.getPropertyValue('--primary').trim() || "258 36% 51%",
+        primaryForeground: rootStyle.getPropertyValue('--primary-foreground').trim() || "0 0% 100%",
+        secondary: rootStyle.getPropertyValue('--secondary').trim() || "262 28% 80%",
+        secondaryForeground: rootStyle.getPropertyValue('--secondary-foreground').trim() || "258 36% 30%",
+        accent: rootStyle.getPropertyValue('--accent').trim() || "232 39% 34%",
+        accentForeground: rootStyle.getPropertyValue('--accent-foreground').trim() || "0 0% 100%",
+        background: rootStyle.getPropertyValue('--background').trim() || "262 28% 90%",
+        foreground: rootStyle.getPropertyValue('--foreground').trim() || "258 10% 20%",
+        card: rootStyle.getPropertyValue('--card').trim() || "0 0% 100%",
+        cardForeground: rootStyle.getPropertyValue('--card-foreground').trim() || "258 10% 20%",
+        ring: rootStyle.getPropertyValue('--ring').trim() || "258 36% 61%",
+        radius: parseFloat(rootStyle.getPropertyValue('--radius')) || 0.5,
+        fontFamily: bodyStyle.fontFamily || "Inter, sans-serif",
+      };
+      setInitialThemeValuesFromCSS(initialVals);
 
-      setInitialThemeValuesFromCSS({
-        primary: initialPrimary, primaryForeground: initialPrimaryFg,
-        secondary: initialSecondary, secondaryForeground: initialSecondaryFg,
-        accent: initialAccent, accentForeground: initialAccentFg,
-        ring: initialRing, radius: validRadius, fontFamily: initialFont
-      });
-
-      // Initialize pickers if not already set by user interaction
-      if (pgPrimaryHsl === null) setPgPickerPrimaryHex(hslStringToHex(initialPrimary));
-      if (pgAccentHsl === null) setPgPickerAccentHex(hslStringToHex(initialAccent));
-      // pgRadius and pgFontFamily being null means they use initial values by default
+      if (pgPrimaryHsl === null) setPgPickerPrimaryHex(hslStringToHex(initialVals.primary));
+      if (pgAccentHsl === null) setPgPickerAccentHex(hslStringToHex(initialVals.accent));
+      if (pgBackgroundHsl === null) setPgPickerBackgroundHex(hslStringToHex(initialVals.background));
+      if (pgCardHsl === null) setPgPickerCardHex(hslStringToHex(initialVals.card));
     }
   }, []); 
 
@@ -251,21 +270,12 @@ export default function UiElementsPage() {
     const bodyStyle = document.body.style;
     const {radius: initialRadius, fontFamily: initialFontFamily, ...initialColors} = initialThemeValuesFromCSS;
 
-    const propertiesToManage = [
-        '--primary', '--primary-foreground', 
-        '--secondary', '--secondary-foreground',
-        '--accent', '--accent-foreground',
-        '--ring', '--radius'
-    ];
-
     // Apply primary color and its derivatives
     if (pgPrimaryHsl) {
       docStyle.setProperty('--primary', pgPrimaryHsl);
       const primary = parseHslString(pgPrimaryHsl);
       if (primary) {
-        const primaryFg = deriveForegroundColor(primary);
-        docStyle.setProperty('--primary-foreground', hslToString(primaryFg));
-
+        docStyle.setProperty('--primary-foreground', hslToString(deriveForegroundColor(primary)));
         const secondary = { 
           h: primary.h, 
           s: Math.max(0, primary.s - 15), 
@@ -276,12 +286,8 @@ export default function UiElementsPage() {
             secondary.l = Math.max(0, Math.min(100, secondary.l));
         }
         docStyle.setProperty('--secondary', hslToString(secondary));
-        
-        const secondaryFg = deriveForegroundColor(secondary);
-        docStyle.setProperty('--secondary-foreground', hslToString(secondaryFg));
-        
-        const ring = { h: primary.h, s: Math.min(100, primary.s + 10), l: Math.min(100, primary.l + 5) };
-        docStyle.setProperty('--ring', hslToString(ring));
+        docStyle.setProperty('--secondary-foreground', hslToString(deriveForegroundColor(secondary)));
+        docStyle.setProperty('--ring', hslToString({ h: primary.h, s: Math.min(100, primary.s + 10), l: Math.min(100, primary.l + 5) }));
       }
     } else {
       docStyle.setProperty('--primary', initialColors.primary);
@@ -295,42 +301,54 @@ export default function UiElementsPage() {
     if (pgAccentHsl) {
       docStyle.setProperty('--accent', pgAccentHsl);
       const accent = parseHslString(pgAccentHsl);
-      if (accent) {
-        const accentFg = deriveForegroundColor(accent);
-        docStyle.setProperty('--accent-foreground', hslToString(accentFg));
-      }
+      if (accent) docStyle.setProperty('--accent-foreground', hslToString(deriveForegroundColor(accent)));
     } else {
       docStyle.setProperty('--accent', initialColors.accent);
       docStyle.setProperty('--accent-foreground', initialColors.accentForeground);
     }
-    
-    // Apply radius
-    if (pgRadius !== null) {
-      docStyle.setProperty('--radius', `${pgRadius}rem`);
+
+    // Apply background color and its derivative
+    if (pgBackgroundHsl) {
+        docStyle.setProperty('--background', pgBackgroundHsl);
+        const background = parseHslString(pgBackgroundHsl);
+        if (background) docStyle.setProperty('--foreground', hslToString(deriveForegroundColor(background)));
     } else {
-       docStyle.setProperty('--radius', `${initialRadius}rem`);
+        docStyle.setProperty('--background', initialColors.background);
+        docStyle.setProperty('--foreground', initialColors.foreground);
     }
 
-    // Apply font family
-    if (pgFontFamily !== null) {
-        bodyStyle.fontFamily = pgFontFamily;
+    // Apply card background color and its derivative
+    if (pgCardHsl) {
+        docStyle.setProperty('--card', pgCardHsl);
+        const card = parseHslString(pgCardHsl);
+        if (card) docStyle.setProperty('--card-foreground', hslToString(deriveForegroundColor(card)));
     } else {
-        bodyStyle.fontFamily = initialFontFamily;
+        docStyle.setProperty('--card', initialColors.card);
+        docStyle.setProperty('--card-foreground', initialColors.cardForeground);
     }
+    
+    if (pgRadius !== null) docStyle.setProperty('--radius', `${pgRadius}rem`);
+    else docStyle.setProperty('--radius', `${initialRadius}rem`);
+
+    if (pgFontFamily !== null) bodyStyle.fontFamily = pgFontFamily;
+    else bodyStyle.fontFamily = initialFontFamily;
 
     return () => {
-        // Restore all initial CSS values from stylesheet by re-applying them explicitly
         docStyle.setProperty('--primary', initialColors.primary);
         docStyle.setProperty('--primary-foreground', initialColors.primaryForeground);
         docStyle.setProperty('--secondary', initialColors.secondary);
         docStyle.setProperty('--secondary-foreground', initialColors.secondaryForeground);
         docStyle.setProperty('--accent', initialColors.accent);
         docStyle.setProperty('--accent-foreground', initialColors.accentForeground);
+        docStyle.setProperty('--background', initialColors.background);
+        docStyle.setProperty('--foreground', initialColors.foreground);
+        docStyle.setProperty('--card', initialColors.card);
+        docStyle.setProperty('--card-foreground', initialColors.cardForeground);
         docStyle.setProperty('--ring', initialColors.ring);
         docStyle.setProperty('--radius', `${initialRadius}rem`);
         bodyStyle.fontFamily = initialFontFamily;
     };
-  }, [pgPrimaryHsl, pgAccentHsl, pgRadius, pgFontFamily, initialThemeValuesFromCSS]);
+  }, [pgPrimaryHsl, pgAccentHsl, pgBackgroundHsl, pgCardHsl, pgRadius, pgFontFamily, initialThemeValuesFromCSS]);
 
 
   return (
@@ -359,12 +377,12 @@ export default function UiElementsPage() {
                 <CardTitle>Theme Playground</CardTitle>
               </div>
               <CardDescription>
-                Experiment with colors, color pickers, border radius, and font family in real-time. Changes here (primary/accent colors, radius, font) dynamically adjust several related theme colors (like foregrounds and secondary shades) for this session only. These changes do not modify <code>globals.css</code> and will reset on page refresh or when toggling the main theme (light/dark).
+                Experiment with colors, color pickers, border radius, and font family in real-time. Changes here (primary, accent, background, card colors, radius, font) dynamically adjust several related theme colors (like foregrounds and secondary shades) for this session only. These changes do not modify <code>globals.css</code> and will reset on page refresh or when toggling the main theme (light/dark).
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0 space-y-6">
-              <div className="grid md:grid-cols-2 gap-6 items-start">
-                <div className="space-y-4 p-4 border rounded-lg bg-card">
+              <div className="grid md:grid-cols-3 gap-6 items-start">
+                <div className="md:col-span-1 space-y-4 p-4 border rounded-lg bg-card">
                   <h4 className="font-medium text-center mb-2 text-card-foreground">Preview Elements</h4>
                   <div className="flex flex-wrap gap-2 items-center">
                     <Button variant="default" size="default">Primary Btn</Button>
@@ -382,8 +400,9 @@ export default function UiElementsPage() {
                     This box uses the accent color for its background.
                   </div>
                   <Input placeholder="Input with current radius & ring" />
+                  <p className="text-xs text-muted-foreground">Page background and card background will also change based on your selections below.</p>
                 </div>
-                <div className="space-y-4">
+                <div className="md:col-span-2 space-y-4">
                   <div>
                     <h4 className="font-medium mb-1">Color Presets</h4>
                     <p className="text-xs text-muted-foreground mb-2">Change primary & accent colors.</p>
@@ -409,7 +428,7 @@ export default function UiElementsPage() {
                   <Separator />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="pg-primary-color-picker" className="text-sm font-medium">Primary Color</Label>
+                      <Label htmlFor="pg-primary-color-picker" className="text-sm font-medium flex items-center gap-1"> <Paintbrush size={14}/> Primary Color</Label>
                       <Input 
                         type="color" 
                         id="pg-primary-color-picker" 
@@ -420,7 +439,7 @@ export default function UiElementsPage() {
                       <p className="text-xs text-muted-foreground mt-1">{pgPickerPrimaryHex} (HSL: {pgPrimaryHsl || initialThemeValuesFromCSS.primary || "N/A"})</p>
                     </div>
                      <div>
-                      <Label htmlFor="pg-accent-color-picker" className="text-sm font-medium">Accent Color</Label>
+                      <Label htmlFor="pg-accent-color-picker" className="text-sm font-medium flex items-center gap-1"><Paintbrush size={14}/> Accent Color</Label>
                       <Input 
                         type="color" 
                         id="pg-accent-color-picker" 
@@ -429,6 +448,28 @@ export default function UiElementsPage() {
                         className="p-1 h-10 w-full mt-1"
                       />
                        <p className="text-xs text-muted-foreground mt-1">{pgPickerAccentHex} (HSL: {pgAccentHsl || initialThemeValuesFromCSS.accent || "N/A"})</p>
+                    </div>
+                     <div>
+                      <Label htmlFor="pg-background-color-picker" className="text-sm font-medium flex items-center gap-1"><Wallpaper size={14}/> Background Color</Label>
+                      <Input 
+                        type="color" 
+                        id="pg-background-color-picker" 
+                        value={pgPickerBackgroundHex} 
+                        onChange={handleBackgroundColorPickerChange}
+                        className="p-1 h-10 w-full mt-1"
+                      />
+                       <p className="text-xs text-muted-foreground mt-1">{pgPickerBackgroundHex} (HSL: {pgBackgroundHsl || initialThemeValuesFromCSS.background || "N/A"})</p>
+                    </div>
+                     <div>
+                      <Label htmlFor="pg-card-color-picker" className="text-sm font-medium flex items-center gap-1"><Square size={14}/> Card Background</Label>
+                      <Input 
+                        type="color" 
+                        id="pg-card-color-picker" 
+                        value={pgPickerCardHex} 
+                        onChange={handleCardColorPickerChange}
+                        className="p-1 h-10 w-full mt-1"
+                      />
+                       <p className="text-xs text-muted-foreground mt-1">{pgPickerCardHex} (HSL: {pgCardHsl || initialThemeValuesFromCSS.card || "N/A"})</p>
                     </div>
                   </div>
                   <Separator />
