@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Cog, Globe, Palette, RefreshCw, CornerRightUp } from "lucide-react";
+import { Cog, Globe, Palette, RefreshCw } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from '@/components/ui/separator';
 
@@ -27,6 +27,7 @@ export default function SettingsPage() {
   const [currentPrimary, setCurrentPrimary] = React.useState<string | null>(null);
   const [currentAccent, setCurrentAccent] = React.useState<string | null>(null);
   const [currentRadius, setCurrentRadius] = React.useState<number | null>(null);
+  const [initialRadius, setInitialRadius] = React.useState<number>(0.5); // Default if CSS var not found
 
   const handleAccountSave = () => {
     console.log("Account settings saved:", { username, email });
@@ -48,11 +49,17 @@ export default function SettingsPage() {
   const resetAppearance = () => {
     setCurrentPrimary(null);
     setCurrentAccent(null);
-    setCurrentRadius(null);
-     // Force removal of inline styles if any were manually uncleared by useEffect returning before null set
+    setCurrentRadius(null); // This will trigger useEffect to remove inline styles
+    // Force removal of inline styles if any were manually uncleared by useEffect returning before null set
+    // or if initial styles need to be restored cleanly
     document.documentElement.style.removeProperty('--primary');
     document.documentElement.style.removeProperty('--accent');
     document.documentElement.style.removeProperty('--radius');
+    // Re-read initial radius in case it was from CSS and needs to be reapplied by slider state
+     if (typeof window !== 'undefined') {
+      const radiusFromCSS = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--radius'));
+      setCurrentRadius(isNaN(radiusFromCSS) ? initialRadius : radiusFromCSS);
+    }
   };
 
   React.useEffect(() => {
@@ -61,28 +68,22 @@ export default function SettingsPage() {
     if (currentAccent) docStyle.setProperty('--accent', currentAccent); else docStyle.removeProperty('--accent');
     if (currentRadius !== null) docStyle.setProperty('--radius', `${currentRadius}rem`); else docStyle.removeProperty('--radius');
     
-    // Cleanup function to reset styles if component unmounts or for HMR
     return () => {
-        // Only remove if they were actively set by this component
-        // This check is a bit simplistic, a more robust solution might involve tracking original values
-        if (docStyle.getPropertyValue('--primary') === currentPrimary && currentPrimary !== null) {
-            docStyle.removeProperty('--primary');
-        }
-        if (docStyle.getPropertyValue('--accent') === currentAccent && currentAccent !== null) {
-            docStyle.removeProperty('--accent');
-        }
-        if (docStyle.getPropertyValue('--radius') === `${currentRadius}rem` && currentRadius !== null) {
-            docStyle.removeProperty('--radius');
-        }
+        // More robust cleanup: always attempt to remove these specific properties if they were potentially set.
+        // This avoids issues if the component unmounts while a value is set.
+        docStyle.removeProperty('--primary');
+        docStyle.removeProperty('--accent');
+        docStyle.removeProperty('--radius');
     };
   }, [currentPrimary, currentAccent, currentRadius]);
 
   React.useEffect(() => {
-    // Initialize radius slider with the current computed value from CSS
     if (typeof window !== 'undefined') {
-      const initialRadius = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--radius'));
-      if (!isNaN(initialRadius) && currentRadius === null) { // Only set if not already customized
-        setCurrentRadius(initialRadius);
+      const radiusFromCSS = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--radius'));
+      const validRadius = isNaN(radiusFromCSS) ? 0.5 : radiusFromCSS; // Default to 0.5 if CSS var is not a number
+      setInitialRadius(validRadius);
+      if (currentRadius === null) { // Only set if not already customized by user action
+        setCurrentRadius(validRadius);
       }
     }
   }, []);
@@ -164,17 +165,18 @@ export default function SettingsPage() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Palette className="h-6 w-6 text-primary" />
-            <CardTitle>Appearance Settings</CardTitle>
+            <CardTitle>Appearance Settings (Live Preview)</CardTitle>
           </div>
           <CardDescription>
-            Customize the look and feel of the application. Changes are applied live for this session.
-            To make permanent changes, edit <code>src/app/globals.css</code>.
+            Experiment with the application's look and feel. Changes made here are applied live for your current session only and will reset on page refresh or when you navigate away.
+            The 'Save Appearance' button below is for demonstration; actual persistence would require further development (e.g., saving to user preferences).
+            For permanent, global theme definitions, developers should edit <code>src/app/globals.css</code>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
             <Label className="text-base font-medium">Theme Color Presets</Label>
-            <p className="text-sm text-muted-foreground mb-3">Select a primary and accent color scheme.</p>
+            <p className="text-sm text-muted-foreground mb-3">Select a primary and accent color scheme to preview.</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {primaryColorPresets.map(preset => (
                 <Button 
@@ -192,38 +194,38 @@ export default function SettingsPage() {
           <Separator />
           <div>
             <Label htmlFor="radius-slider" className="text-base font-medium">
-              Border Radius: <span className="font-normal text-muted-foreground">{currentRadius !== null ? currentRadius.toFixed(1) : "Default"}rem</span>
+              Border Radius Preview: <span className="font-normal text-muted-foreground">{currentRadius !== null ? currentRadius.toFixed(1) : initialRadius.toFixed(1)}rem</span>
             </Label>
-            <p className="text-sm text-muted-foreground mb-3">Adjust the roundness of UI elements.</p>
+            <p className="text-sm text-muted-foreground mb-3">Adjust the roundness of UI elements for this session.</p>
             <Slider
                 id="radius-slider"
                 min={0}
                 max={1.5}
                 step={0.1}
-                value={[currentRadius ?? 0.5]} // Default to 0.5 if null for slider UI
+                value={[currentRadius ?? initialRadius]} 
                 onValueChange={handleRadiusChange}
             />
           </div>
           <Separator />
            <div className="flex items-center gap-2">
              <Button onClick={resetAppearance} variant="outline">
-                <RefreshCw className="mr-2" /> Reset to Defaults
+                <RefreshCw className="mr-2 h-4 w-4" /> Reset to Defaults
              </Button>
-            <Button>Save Appearance (Conceptual)</Button>
+            <Button disabled title="Conceptual: Requires implementation for persistence">Save Appearance (Demo)</Button>
           </div>
            <div className="p-4 border rounded-md bg-card space-y-2">
              <h4 className="font-medium text-card-foreground">Preview Elements</h4>
-             <div className="flex gap-2 items-center">
+             <div className="flex gap-2 items-center flex-wrap">
                 <Button size="sm">Primary Button</Button>
                 <Button variant="secondary" size="sm">Secondary</Button>
+                <Button variant="outline" size="sm">Outline</Button>
                 <span className="p-2 bg-accent text-accent-foreground rounded-md text-xs">Accent Box</span>
              </div>
              <p className="text-primary text-sm">This text uses the primary color.</p>
+             <Input placeholder="Input field with current radius" />
            </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-    
