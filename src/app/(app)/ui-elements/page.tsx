@@ -24,7 +24,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Mail, Terminal, Users, ShieldCheck } from "lucide-react";
+import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush } from "lucide-react";
 import Image from 'next/image';
 
 
@@ -36,7 +36,17 @@ export default function UiElementsPage() {
     <TooltipProvider>
       <div className="container mx-auto py-10 space-y-12">
         <Toaster />
-        <h1 className="text-4xl font-bold tracking-tight text-primary">UI Elements Showcase</h1>
+        <h1 className="text-4xl font-bold tracking-tight text-primary mb-8">UI Elements Showcase</h1>
+
+        <Alert>
+          <Paintbrush className="h-4 w-4" />
+          <AlertTitle>Customize Your UI!</AlertTitle>
+          <AlertDescription>
+            The UI components showcased below are styled using the theme defined in <strong>src/app/globals.css</strong>.
+            You can customize the application&apos;s appearance, including colors and border radius, by modifying the HSL variables
+            in that file. Use the theme toggle in the header to switch between light, dark, and system modes to see your changes in action.
+          </AlertDescription>
+        </Alert>
 
         {/* Buttons */}
         <section>
@@ -347,3 +357,5 @@ export default function UiElementsPage() {
     </TooltipProvider>
   );
 }
+
+    
