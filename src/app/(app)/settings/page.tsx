@@ -17,6 +17,21 @@ const primaryColorPresets = [
   { name: "Sunset Orange", primary: "30 90% 55%", accent: "15 80% 50%" },
 ];
 
+// Helper function to parse HSL string "H S% L%" or "H S L"
+function parseHslString(hslString?: string | null): { h: number; s: number; l: number } | null {
+  if (!hslString) return null;
+  const parts = hslString.trim().replace(/%/g, "").split(/\s+/);
+  if (parts.length !== 3) return null;
+  const [h, s, l] = parts.map(parseFloat);
+  if (isNaN(h) || isNaN(s) || isNaN(l)) return null;
+  return { h, s, l };
+}
+
+// Helper function to convert HSL object to string "H S% L%"
+function hslToString(hsl: { h: number; s: number; l: number }): string {
+  return `${Math.round(hsl.h)} ${Math.round(hsl.s)}% ${Math.round(hsl.l)}%`;
+}
+
 // Helper function to convert HEX to HSL string "H S% L%"
 function hexToHslString(hex: string): string {
   let r = 0, g = 0, b = 0;
@@ -29,7 +44,7 @@ function hexToHslString(hex: string): string {
     g = parseInt(hex.substring(3, 5), 16);
     b = parseInt(hex.substring(5, 7), 16);
   } else {
-    return "0 0% 0%"; // Default to black if invalid hex
+    return "0 0% 0%"; 
   }
 
   r /= 255; g /= 255; b /= 255;
@@ -54,10 +69,12 @@ function hexToHslString(hex: string): string {
 
 // Helper function to convert HSL string "H S% L%" to HEX
 function hslStringToHex(hslString: string): string {
-  const [hStr, sStr, lStr] = hslString.split(" ");
-  let h = parseFloat(hStr);
-  let s = parseFloat(sStr.replace('%', '')) / 100;
-  let l = parseFloat(lStr.replace('%', '')) / 100;
+  const parsed = parseHslString(hslString);
+  if (!parsed) return "#000000";
+  let {h,s,l} = parsed;
+
+  s /= 100;
+  l /= 100;
 
   const k = (n: number) => (n + h / 30) % 12;
   const a = s * Math.min(l, 1 - l);
@@ -71,6 +88,17 @@ function hslStringToHex(hslString: string): string {
   return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
 }
 
+// Derives a contrasting foreground color (light/dark)
+function deriveForegroundColor(backgroundHsl: { h: number; s: number; l: number }): { h: number; s: number; l: number } {
+  // Using a common threshold for lightness to determine contrast.
+  // L* values are 0-100.
+  if (backgroundHsl.l > 55) { // If background is light
+    return { h: backgroundHsl.h, s: Math.min(100, backgroundHsl.s + 5), l: Math.max(0, backgroundHsl.l - 40 > 15 ? backgroundHsl.l - 40: 10) }; // Darker text
+  } else { // If background is dark
+    return { h: 0, s: 0, l: 95 }; // Lighter text (often white or very light gray)
+  }
+}
+
 
 export default function SettingsPage() {
   const [username, setUsername] = React.useState("Admin User");
@@ -78,16 +106,26 @@ export default function SettingsPage() {
   const [language, setLanguage] = React.useState("en");
   const [refreshInterval, setRefreshInterval] = React.useState("15min");
 
-  // State for appearance customization
   const [currentPrimaryHsl, setCurrentPrimaryHsl] = React.useState<string | null>(null);
   const [currentAccentHsl, setCurrentAccentHsl] = React.useState<string | null>(null);
-  const [pickerPrimaryHex, setPickerPrimaryHex] = React.useState("#6750A4"); // Default hex
-  const [pickerAccentHex, setPickerAccentHex] = React.useState("#343D79"); // Default hex
+  const [pickerPrimaryHex, setPickerPrimaryHex] = React.useState("#6750A4"); 
+  const [pickerAccentHex, setPickerAccentHex] = React.useState("#343D79"); 
 
   const [currentRadius, setCurrentRadius] = React.useState<number | null>(null);
-  const [initialRadius, setInitialRadius] = React.useState<number>(0.5);
-  const [initialPrimaryHsl, setInitialPrimaryHsl] = React.useState<string | null>(null);
-  const [initialAccentHsl, setInitialAccentHsl] = React.useState<string | null>(null);
+  
+  const [initialValues, setInitialValues] = React.useState<{
+    primary: string | null;
+    primaryForeground: string | null;
+    secondary: string | null;
+    secondaryForeground: string | null;
+    accent: string | null;
+    accentForeground: string | null;
+    ring: string | null;
+    radius: number;
+  }>({
+    primary: null, primaryForeground: null, secondary: null, secondaryForeground: null,
+    accent: null, accentForeground: null, ring: null, radius: 0.5
+  });
 
 
   const handleAccountSave = () => {
@@ -122,70 +160,146 @@ export default function SettingsPage() {
   };
   
   const resetAppearance = () => {
-    setCurrentPrimaryHsl(initialPrimaryHsl);
-    setCurrentAccentHsl(initialAccentHsl);
-    setCurrentRadius(initialRadius); // Reset to the actual initial radius
-    if (initialPrimaryHsl) setPickerPrimaryHex(hslStringToHex(initialPrimaryHsl));
-    if (initialAccentHsl) setPickerAccentHex(hslStringToHex(initialAccentHsl));
+    // Remove all dynamically set properties by setting current values to null or initial CSS values
+    // This will trigger useEffect to remove inline styles or re-apply initial CSS values
+    setCurrentPrimaryHsl(initialValues.primary);
+    setCurrentAccentHsl(initialValues.accent);
+    setCurrentRadius(initialValues.radius); 
+    
+    if (initialValues.primary) setPickerPrimaryHex(hslStringToHex(initialValues.primary));
+    if (initialValues.accent) setPickerAccentHex(hslStringToHex(initialValues.accent));
   };
   
   React.useEffect(() => {
-    // On component mount, read initial theme values from CSS
     if (typeof window !== 'undefined') {
       const computedStyle = getComputedStyle(document.documentElement);
-      
+      const initialPrimary = computedStyle.getPropertyValue('--primary').trim();
+      const initialPrimaryFg = computedStyle.getPropertyValue('--primary-foreground').trim();
+      const initialSecondary = computedStyle.getPropertyValue('--secondary').trim();
+      const initialSecondaryFg = computedStyle.getPropertyValue('--secondary-foreground').trim();
+      const initialAccent = computedStyle.getPropertyValue('--accent').trim();
+      const initialAccentFg = computedStyle.getPropertyValue('--accent-foreground').trim();
+      const initialRing = computedStyle.getPropertyValue('--ring').trim();
       const radiusFromCSS = parseFloat(computedStyle.getPropertyValue('--radius'));
       const validRadius = isNaN(radiusFromCSS) ? 0.5 : radiusFromCSS;
-      setInitialRadius(validRadius);
+
+      setInitialValues({
+        primary: initialPrimary,
+        primaryForeground: initialPrimaryFg,
+        secondary: initialSecondary,
+        secondaryForeground: initialSecondaryFg,
+        accent: initialAccent,
+        accentForeground: initialAccentFg,
+        ring: initialRing,
+        radius: validRadius,
+      });
+
+      if (currentPrimaryHsl === null) setCurrentPrimaryHsl(initialPrimary);
+      if (currentAccentHsl === null) setCurrentAccentHsl(initialAccent);
       if (currentRadius === null) setCurrentRadius(validRadius);
-
-      const primaryHslFromCSS = computedStyle.getPropertyValue('--primary').trim();
-      const accentHslFromCSS = computedStyle.getPropertyValue('--accent').trim();
-
-      if (primaryHslFromCSS) {
-        setInitialPrimaryHsl(primaryHslFromCSS);
-        if (currentPrimaryHsl === null) setCurrentPrimaryHsl(primaryHslFromCSS);
-        setPickerPrimaryHex(hslStringToHex(primaryHslFromCSS));
-      }
-      if (accentHslFromCSS) {
-        setInitialAccentHsl(accentHslFromCSS);
-        if (currentAccentHsl === null) setCurrentAccentHsl(accentHslFromCSS);
-        setPickerAccentHex(hslStringToHex(accentHslFromCSS));
-      }
+      
+      if (initialPrimary) setPickerPrimaryHex(hslStringToHex(initialPrimary));
+      if (initialAccent) setPickerAccentHex(hslStringToHex(initialAccent));
     }
   }, []);
 
 
   React.useEffect(() => {
     const docStyle = document.documentElement.style;
+    const propertiesToClean = [
+        '--primary', '--primary-foreground', 
+        '--secondary', '--secondary-foreground',
+        '--accent', '--accent-foreground',
+        '--ring', '--radius'
+    ];
+
+    // Apply current primary color and derive related colors
     if (currentPrimaryHsl) {
       docStyle.setProperty('--primary', currentPrimaryHsl);
-    } else if (initialPrimaryHsl) {
-      docStyle.setProperty('--primary', initialPrimaryHsl);
+      const primary = parseHslString(currentPrimaryHsl);
+      if (primary) {
+        const primaryFg = deriveForegroundColor(primary);
+        docStyle.setProperty('--primary-foreground', hslToString(primaryFg));
+
+        const secondary = { 
+          h: primary.h, 
+          s: Math.max(0, primary.s - 15), 
+          l: primary.l > 50 ? Math.max(10, primary.l - 20) : Math.min(90, primary.l + 20) 
+        };
+        if (Math.abs(secondary.l - primary.l) < 10) { // Ensure sufficient lightness difference
+            secondary.l = primary.l > 50 ? primary.l - 25 : primary.l + 25;
+            secondary.l = Math.max(0, Math.min(100, secondary.l));
+        }
+        docStyle.setProperty('--secondary', hslToString(secondary));
+        
+        const secondaryFg = deriveForegroundColor(secondary);
+        docStyle.setProperty('--secondary-foreground', hslToString(secondaryFg));
+        
+        const ring = { h: primary.h, s: Math.min(100, primary.s + 10), l: Math.min(100, primary.l + 5) };
+        docStyle.setProperty('--ring', hslToString(ring));
+      }
+    } else if (initialValues.primary) {
+      docStyle.setProperty('--primary', initialValues.primary);
+      if (initialValues.primaryForeground) docStyle.setProperty('--primary-foreground', initialValues.primaryForeground);
+      if (initialValues.secondary) docStyle.setProperty('--secondary', initialValues.secondary);
+      if (initialValues.secondaryForeground) docStyle.setProperty('--secondary-foreground', initialValues.secondaryForeground);
+      if (initialValues.ring) docStyle.setProperty('--ring', initialValues.ring);
     } else {
-      docStyle.removeProperty('--primary');
+        docStyle.removeProperty('--primary');
+        docStyle.removeProperty('--primary-foreground');
+        docStyle.removeProperty('--secondary');
+        docStyle.removeProperty('--secondary-foreground');
+        docStyle.removeProperty('--ring');
     }
 
+    // Apply current accent color and derive its foreground
     if (currentAccentHsl) {
       docStyle.setProperty('--accent', currentAccentHsl);
-    } else if (initialAccentHsl) {
-      docStyle.setProperty('--accent', initialAccentHsl);
+      const accent = parseHslString(currentAccentHsl);
+      if (accent) {
+        const accentFg = deriveForegroundColor(accent);
+        docStyle.setProperty('--accent-foreground', hslToString(accentFg));
+      }
+    } else if (initialValues.accent) {
+      docStyle.setProperty('--accent', initialValues.accent);
+      if (initialValues.accentForeground) docStyle.setProperty('--accent-foreground', initialValues.accentForeground);
     } else {
-      docStyle.removeProperty('--accent');
+        docStyle.removeProperty('--accent');
+        docStyle.removeProperty('--accent-foreground');
     }
     
+    // Apply current radius
     if (currentRadius !== null) {
       docStyle.setProperty('--radius', `${currentRadius}rem`);
     } else {
-       docStyle.setProperty('--radius', `${initialRadius}rem`);
+       docStyle.setProperty('--radius', `${initialValues.radius}rem`);
     }
     
     return () => {
-        if (initialPrimaryHsl) docStyle.setProperty('--primary', initialPrimaryHsl); else docStyle.removeProperty('--primary');
-        if (initialAccentHsl) docStyle.setProperty('--accent', initialAccentHsl); else docStyle.removeProperty('--accent');
-        docStyle.setProperty('--radius', `${initialRadius}rem`);
+        // On cleanup, restore initial CSS values from stylesheet by removing inline styles
+        // or re-applying explicitly if needed, but removal is often cleaner.
+        propertiesToClean.forEach(prop => {
+            const initialVal = initialValues[prop.substring(2) as keyof typeof initialValues];
+            if (typeof initialVal === 'string' && initialVal) {
+                 docStyle.setProperty(prop, initialVal);
+            } else if (prop === '--radius') {
+                 docStyle.setProperty(prop, `${initialValues.radius}rem`);
+            }
+            else {
+                 docStyle.removeProperty(prop);
+            }
+        });
+         // Re-apply initial radius explicitly on cleanup
+        docStyle.setProperty('--radius', `${initialValues.radius}rem`);
+        if(initialValues.primary) docStyle.setProperty('--primary', initialValues.primary);
+        if(initialValues.primaryForeground) docStyle.setProperty('--primary-foreground', initialValues.primaryForeground);
+        if(initialValues.secondary) docStyle.setProperty('--secondary', initialValues.secondary);
+        if(initialValues.secondaryForeground) docStyle.setProperty('--secondary-foreground', initialValues.secondaryForeground);
+        if(initialValues.accent) docStyle.setProperty('--accent', initialValues.accent);
+        if(initialValues.accentForeground) docStyle.setProperty('--accent-foreground', initialValues.accentForeground);
+        if(initialValues.ring) docStyle.setProperty('--ring', initialValues.ring);
     };
-  }, [currentPrimaryHsl, currentAccentHsl, currentRadius, initialPrimaryHsl, initialAccentHsl, initialRadius]);
+  }, [currentPrimaryHsl, currentAccentHsl, currentRadius, initialValues]);
 
 
   return (
@@ -267,8 +381,8 @@ export default function SettingsPage() {
             <CardTitle>Appearance Settings (Live Preview)</CardTitle>
           </div>
           <CardDescription>
-            Experiment with the application's look and feel. Changes made here (primary color, accent color, border radius) are applied live for your current session only and will reset on page refresh or when you navigate away, reverting to the theme defined in <code>src/app/globals.css</code>.
-            The 'Save Appearance' button below is for demonstration; actual persistence would require further development (e.g., saving to user preferences).
+            Experiment with the application's look and feel. Changes made here (primary/accent colors, border radius) dynamically adjust several related theme colors (like foregrounds and secondary shades) for this session only based on your selections. These changes will reset on page refresh or when you navigate away, reverting to the theme defined in <code>src/app/globals.css</code>.
+            The 'Save Appearance' button below is for demonstration; actual persistence would require further development.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -325,7 +439,7 @@ export default function SettingsPage() {
 
           <div>
             <Label htmlFor="radius-slider" className="text-base font-medium">
-              Border Radius Preview: <span className="font-normal text-muted-foreground">{currentRadius !== null ? currentRadius.toFixed(1) : initialRadius.toFixed(1)}rem</span>
+              Border Radius Preview: <span className="font-normal text-muted-foreground">{currentRadius !== null ? currentRadius.toFixed(1) : initialValues.radius.toFixed(1)}rem</span>
             </Label>
             <p className="text-sm text-muted-foreground mb-3">Adjust the roundness of UI elements for this session.</p>
             <Slider
@@ -333,7 +447,7 @@ export default function SettingsPage() {
                 min={0}
                 max={1.5}
                 step={0.1}
-                value={[currentRadius ?? initialRadius]} 
+                value={[currentRadius ?? initialValues.radius]} 
                 onValueChange={handleRadiusChange}
             />
           </div>
@@ -360,5 +474,6 @@ export default function SettingsPage() {
     </div>
   );
 }
+    
 
     
