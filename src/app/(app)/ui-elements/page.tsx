@@ -34,7 +34,7 @@ type ButtonVariant = VariantProps<typeof buttonVariants>['variant'];
 type ButtonSize = VariantProps<typeof buttonVariants>['size'];
 
 const colorPresets = [
-    { name: "Default Theme", primary: null, accent: null }, // Option to reset to globals.css
+    { name: "Default Theme", primary: null, accent: null }, 
     { name: "Oceanic (Blue/Teal)", primary: "210 70% 55%", accent: "170 60% 45%" },
     { name: "Sunset (Orange/Red)", primary: "30 90% 55%", accent: "0 80% 60%" },
     { name: "Verdant (Green/Gold)", primary: "140 60% 45%", accent: "40 70% 50%" },
@@ -43,7 +43,7 @@ const colorPresets = [
 ];
 
 const fontOptions = [
-    { value: "", label: "Default (Inter)" },
+    { value: "system-default-font", label: "Default (Inter)" },
     { value: "Roboto, sans-serif", label: "Roboto" },
     { value: "Georgia, serif", label: "Georgia (Serif)" },
     { value: "Verdana, sans-serif", label: "Verdana" },
@@ -59,7 +59,6 @@ export default function UiElementsPage() {
   const [buttonSize, setButtonSize] = React.useState<ButtonSize>("default");
   const [progressValue, setProgressValue] = React.useState(66);
 
-  // State for playground overrides
   const [pgPrimary, setPgPrimary] = React.useState<string | null>(null);
   const [pgAccent, setPgAccent] = React.useState<string | null>(null);
   const [pgRadius, setPgRadius] = React.useState<number | null>(null);
@@ -75,29 +74,32 @@ export default function UiElementsPage() {
     setPgAccent(accent);
   };
 
-  const handlePlaygroundFontChange = (font: string) => {
-    setPgFontFamily(font === "" ? null : font);
+  const handlePlaygroundFontChange = (selectedValue: string) => {
+    if (selectedValue === "system-default-font") {
+      setPgFontFamily(null);
+    } else {
+      setPgFontFamily(selectedValue);
+    }
   };
 
   const resetPlaygroundOverrides = () => {
     setPgPrimary(null);
     setPgAccent(null);
-    setPgRadius(initialRadius); // Reset radius to initial CSS value
+    setPgRadius(initialRadius); 
     setPgFontFamily(null);
   };
 
   React.useEffect(() => {
-    // On component mount, read the initial radius from CSS
     if (typeof window !== 'undefined') {
       const computedStyle = getComputedStyle(document.documentElement);
       const radiusFromCSS = parseFloat(computedStyle.getPropertyValue('--radius'));
       const validRadius = isNaN(radiusFromCSS) ? 0.5 : radiusFromCSS;
       setInitialRadius(validRadius);
-      if (pgRadius === null) { // Only set if not already modified by user
+      if (pgRadius === null) { 
         setPgRadius(validRadius);
       }
     }
-  }, []); // Empty dependency array for mount only
+  }, []); 
 
   React.useEffect(() => {
     const docStyle = document.documentElement.style;
@@ -107,20 +109,21 @@ export default function UiElementsPage() {
     if (pgAccent) docStyle.setProperty('--accent', pgAccent); else docStyle.removeProperty('--accent');
     
     if (pgRadius !== null) docStyle.setProperty('--radius', `${pgRadius}rem`); 
-    else if (initialRadius !== null) docStyle.setProperty('--radius', `${initialRadius}rem`); // Fallback to initial if pgRadius is null
-    else docStyle.removeProperty('--radius'); // Remove if both are null (should not happen with initialRadius logic)
+    else if (initialRadius !== null) docStyle.setProperty('--radius', `${initialRadius}rem`); 
+    else docStyle.removeProperty('--radius');
 
 
     if (pgFontFamily) bodyStyle.fontFamily = pgFontFamily; else bodyStyle.fontFamily = '';
 
 
-    // Cleanup function to reset all playground overrides when component unmounts or for HMR
     return () => {
       docStyle.removeProperty('--primary');
       docStyle.removeProperty('--accent');
-      docStyle.removeProperty('--radius'); // Ensure radius is also cleaned up
-      if (initialRadius !== null) { // Attempt to restore initial radius from CSS
+      
+      if (initialRadius !== null) { 
           docStyle.setProperty('--radius', `${initialRadius}rem`);
+      } else {
+          docStyle.removeProperty('--radius');
       }
       bodyStyle.fontFamily = '';
     };
@@ -144,7 +147,6 @@ export default function UiElementsPage() {
           </AlertDescription>
         </Alert>
 
-        {/* Live Theme Playground */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">Live Theme Playground (Session Only)</h2>
           <Card className="p-6 shadow-lg">
@@ -216,14 +218,18 @@ export default function UiElementsPage() {
                   <div>
                     <h4 className="font-medium mb-1">Font Family</h4>
                     <p className="text-xs text-muted-foreground mb-2">Switch the application font (body).</p>
-                     <Select value={pgFontFamily || ""} onValueChange={handlePlaygroundFontChange}>
+                     <Select value={pgFontFamily ?? "system-default-font"} onValueChange={handlePlaygroundFontChange}>
                         <SelectTrigger id="font-family-select">
                             <Baseline className="mr-2 h-4 w-4" />
                             <SelectValue placeholder="Select font family" />
                         </SelectTrigger>
                         <SelectContent>
                             {fontOptions.map(font => (
-                                <SelectItem key={font.value} value={font.value} style={{fontFamily: font.value || 'Inter, sans-serif'}}>
+                                <SelectItem 
+                                  key={font.value} 
+                                  value={font.value} 
+                                  style={{fontFamily: font.value === "system-default-font" ? 'Inter, sans-serif' : font.value}}
+                                >
                                     {font.label}
                                 </SelectItem>
                             ))}
@@ -243,7 +249,6 @@ export default function UiElementsPage() {
 
         <Separator />
 
-        {/* Buttons */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">Buttons</h2>
           <Card className="p-6 shadow-lg">
@@ -300,7 +305,6 @@ export default function UiElementsPage() {
         
         <Separator />
 
-        {/* Forms */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">Forms</h2>
           <Card className="p-6 grid md:grid-cols-2 gap-6 shadow-lg">
@@ -357,7 +361,6 @@ export default function UiElementsPage() {
 
         <Separator />
 
-        {/* Cards */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">Cards</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -400,7 +403,6 @@ export default function UiElementsPage() {
 
         <Separator />
 
-        {/* Alerts & Badges */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">Alerts & Badges</h2>
           <Card className="p-6 grid md:grid-cols-2 gap-6 shadow-lg">
@@ -432,7 +434,6 @@ export default function UiElementsPage() {
 
         <Separator />
 
-        {/* Accordion & Tabs */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">Accordion & Tabs</h2>
           <Card className="p-6 grid md:grid-cols-2 gap-6 shadow-lg">
@@ -463,7 +464,6 @@ export default function UiElementsPage() {
         
         <Separator />
 
-        {/* Dialog, Popover, Tooltip */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">Dialog, Popover & Tooltip</h2>
           <Card className="p-6 flex flex-wrap gap-4 shadow-lg">
@@ -477,7 +477,6 @@ export default function UiElementsPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  {/* Form fields */}
                 </div>
                 <DialogFooter>
                   <Button type="submit">Save changes</Button>
@@ -504,7 +503,6 @@ export default function UiElementsPage() {
 
         <Separator />
 
-        {/* Progress, Slider, Calendar */}
          <section>
           <h2 className="text-2xl font-semibold mb-4">Progress, Slider & Calendar</h2>
           <Card className="p-6 grid md:grid-cols-3 gap-6 shadow-lg">
@@ -536,7 +534,6 @@ export default function UiElementsPage() {
 
         <Separator />
 
-        {/* Table */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">Table</h2>
           <Card className="p-6 shadow-lg">
@@ -570,7 +567,6 @@ export default function UiElementsPage() {
 
         <Separator />
         
-        {/* Toast */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">Toast Notifications</h2>
           <Card className="p-6 shadow-lg">
@@ -594,5 +590,4 @@ export default function UiElementsPage() {
     </TooltipProvider>
   );
 }
-
     
