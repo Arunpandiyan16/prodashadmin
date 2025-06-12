@@ -24,7 +24,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush, Settings2 } from "lucide-react";
+import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush, Settings2, Palette } from "lucide-react";
 import Image from 'next/image';
 import type { VariantProps } from 'class-variance-authority';
 import { buttonVariants } from '@/components/ui/button';
@@ -44,6 +44,27 @@ export default function UiElementsPage() {
   const allButtonVariants: ButtonVariant[] = ["default", "destructive", "outline", "secondary", "ghost", "link"];
   const allButtonSizes: ButtonSize[] = ["default", "sm", "lg", "icon"];
 
+  const applyThemeColors = (primary: string, accent: string) => {
+    if (typeof window !== "undefined") {
+      document.documentElement.style.setProperty('--primary', primary);
+      document.documentElement.style.setProperty('--accent', accent);
+    }
+  };
+
+  const resetThemeColors = () => {
+    if (typeof window !== "undefined") {
+      document.documentElement.style.removeProperty('--primary');
+      document.documentElement.style.removeProperty('--accent');
+    }
+  };
+
+  React.useEffect(() => {
+    // Cleanup function to reset colors when component unmounts or for HMR
+    return () => {
+      resetThemeColors();
+    };
+  }, []);
+
 
   return (
     <TooltipProvider>
@@ -60,6 +81,47 @@ export default function UiElementsPage() {
             in that file. Use the theme toggle in the header to switch between light, dark, and system modes to see your changes in action.
           </AlertDescription>
         </Alert>
+
+        {/* Live Theme Color Playground */}
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">Live Theme Color Playground (Session Only)</h2>
+          <Card className="p-6 shadow-lg">
+            <CardHeader className="p-0 pb-4">
+              <div className="flex items-center gap-2">
+                <Palette className="h-5 w-5 text-primary" />
+                <CardTitle>Theme Color Playground</CardTitle>
+              </div>
+              <CardDescription>
+                Experiment with primary and accent colors in real-time. These changes are temporary for this session and do not modify the global <code>globals.css</code> file. Refreshing the page or toggling the main theme (light/dark) will reset these temporary changes unless reapplied.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0 space-y-6">
+              <div className="grid md:grid-cols-2 gap-6 items-center">
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <h4 className="font-medium text-center mb-2">Preview Elements</h4>
+                  <Button variant="default" size="lg">Primary Button</Button>
+                  <Button variant="outline" size="lg">Outline Button</Button>
+                   <div className="flex gap-2">
+                     <Badge variant="default">Primary Badge</Badge>
+                     <Badge variant="outline" className="border-accent text-accent">Accent Outline</Badge>
+                   </div>
+                  <p className="text-primary font-semibold">This text uses the primary color.</p>
+                  <div className="p-3 bg-accent text-accent-foreground rounded-md">
+                    This box uses the accent color for its background.
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <Button onClick={() => applyThemeColors('210 70% 55%', '170 60% 45%')} className="w-full">Apply Oceanic Tones (Blue/Teal)</Button>
+                  <Button onClick={() => applyThemeColors('30 90% 55%', '0 80% 60%')} className="w-full">Apply Sunset Hues (Orange/Red)</Button>
+                  <Button onClick={() => applyThemeColors('140 60% 45%', '40 70% 50%')} className="w-full">Apply Verdant Greens (Green/Gold)</Button>
+                  <Button onClick={resetThemeColors} variant="outline" className="w-full">Reset to Global Theme</Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <Separator />
 
         {/* Buttons */}
         <section>
@@ -412,5 +474,3 @@ export default function UiElementsPage() {
     </TooltipProvider>
   );
 }
-
-    
