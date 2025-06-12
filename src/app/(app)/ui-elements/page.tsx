@@ -24,7 +24,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush, Settings2, Palette, RotateCcw, Font } from "lucide-react";
+import { AlertCircle, Mail, Terminal, Users, ShieldCheck, Paintbrush, Settings2, Palette, RotateCcw, Baseline } from "lucide-react";
 import Image from 'next/image';
 import type { VariantProps } from 'class-variance-authority';
 import { buttonVariants } from '@/components/ui/button';
@@ -34,6 +34,7 @@ type ButtonVariant = VariantProps<typeof buttonVariants>['variant'];
 type ButtonSize = VariantProps<typeof buttonVariants>['size'];
 
 const colorPresets = [
+    { name: "Default Theme", primary: null, accent: null }, // Option to reset to globals.css
     { name: "Oceanic (Blue/Teal)", primary: "210 70% 55%", accent: "170 60% 45%" },
     { name: "Sunset (Orange/Red)", primary: "30 90% 55%", accent: "0 80% 60%" },
     { name: "Verdant (Green/Gold)", primary: "140 60% 45%", accent: "40 70% 50%" },
@@ -69,7 +70,7 @@ export default function UiElementsPage() {
   const allButtonVariants: ButtonVariant[] = ["default", "destructive", "outline", "secondary", "ghost", "link"];
   const allButtonSizes: ButtonSize[] = ["default", "sm", "lg", "icon"];
 
-  const applyPlaygroundColors = (primary: string, accent: string) => {
+  const applyPlaygroundColors = (primary: string | null, accent: string | null) => {
     setPgPrimary(primary);
     setPgAccent(accent);
   };
@@ -81,7 +82,7 @@ export default function UiElementsPage() {
   const resetPlaygroundOverrides = () => {
     setPgPrimary(null);
     setPgAccent(null);
-    setPgRadius(null);
+    setPgRadius(initialRadius); // Reset radius to initial CSS value
     setPgFontFamily(null);
   };
 
@@ -92,7 +93,7 @@ export default function UiElementsPage() {
       const radiusFromCSS = parseFloat(computedStyle.getPropertyValue('--radius'));
       const validRadius = isNaN(radiusFromCSS) ? 0.5 : radiusFromCSS;
       setInitialRadius(validRadius);
-      if (pgRadius === null) {
+      if (pgRadius === null) { // Only set if not already modified by user
         setPgRadius(validRadius);
       }
     }
@@ -104,7 +105,12 @@ export default function UiElementsPage() {
 
     if (pgPrimary) docStyle.setProperty('--primary', pgPrimary); else docStyle.removeProperty('--primary');
     if (pgAccent) docStyle.setProperty('--accent', pgAccent); else docStyle.removeProperty('--accent');
-    if (pgRadius !== null) docStyle.setProperty('--radius', `${pgRadius}rem`); else docStyle.removeProperty('--radius');
+    
+    if (pgRadius !== null) docStyle.setProperty('--radius', `${pgRadius}rem`); 
+    else if (initialRadius !== null) docStyle.setProperty('--radius', `${initialRadius}rem`); // Fallback to initial if pgRadius is null
+    else docStyle.removeProperty('--radius'); // Remove if both are null (should not happen with initialRadius logic)
+
+
     if (pgFontFamily) bodyStyle.fontFamily = pgFontFamily; else bodyStyle.fontFamily = '';
 
 
@@ -112,10 +118,13 @@ export default function UiElementsPage() {
     return () => {
       docStyle.removeProperty('--primary');
       docStyle.removeProperty('--accent');
-      docStyle.removeProperty('--radius');
+      docStyle.removeProperty('--radius'); // Ensure radius is also cleaned up
+      if (initialRadius !== null) { // Attempt to restore initial radius from CSS
+          docStyle.setProperty('--radius', `${initialRadius}rem`);
+      }
       bodyStyle.fontFamily = '';
     };
-  }, [pgPrimary, pgAccent, pgRadius, pgFontFamily]);
+  }, [pgPrimary, pgAccent, pgRadius, pgFontFamily, initialRadius]);
 
 
   return (
@@ -177,7 +186,11 @@ export default function UiElementsPage() {
                                 className="w-full justify-start text-xs"
                                 size="sm"
                             >
-                                <span style={{ backgroundColor: `hsl(${preset.primary})` }} className="w-3 h-3 rounded-full mr-2 border"/>
+                                {preset.primary && preset.accent ? (
+                                  <span style={{ backgroundColor: `hsl(${preset.primary})` }} className="w-3 h-3 rounded-full mr-2 border"/>
+                                ) : (
+                                  <RotateCcw className="w-3 h-3 mr-2" /> 
+                                )}
                                 {preset.name}
                             </Button>
                         ))}
@@ -205,7 +218,7 @@ export default function UiElementsPage() {
                     <p className="text-xs text-muted-foreground mb-2">Switch the application font (body).</p>
                      <Select value={pgFontFamily || ""} onValueChange={handlePlaygroundFontChange}>
                         <SelectTrigger id="font-family-select">
-                            <Font className="mr-2 h-4 w-4" />
+                            <Baseline className="mr-2 h-4 w-4" />
                             <SelectValue placeholder="Select font family" />
                         </SelectTrigger>
                         <SelectContent>
