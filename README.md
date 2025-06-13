@@ -32,3 +32,36 @@
 ```bash
 git clone <your-repo-url>
 cd prodash-admin
+
+2️⃣ Install dependencies
+bash
+Copy
+Edit
+npm install
+# or
+yarn install
+
+3️⃣ Run the development server
+bash
+Copy
+Edit
+npm run dev
+# or
+yarn dev
+
+4️⃣ Build for production
+bash
+Copy
+Edit
+npm run build
+npm run start
+
+
+🛠 Technologies Used
+Next.js (App Router)
+TailwindCSS
+Shadcn UI
+React Hook Form + Zod
+Zustand
+Recharts
+
